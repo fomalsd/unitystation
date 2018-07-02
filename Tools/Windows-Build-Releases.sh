@@ -12,6 +12,7 @@ winlog=$script_dir/Logs/WindowsBuild.log
 osxlog=$script_dir/Logs/OSXBuild.log
 linlog=$script_dir/Logs/LinuxBuild.log
 srvlog=$script_dir/Logs/ServerBuild.log
+vdfdir=$(cygpath -m $script_dir/ContentBuilder/scripts/)
 
 echo "Attempting build of UnityStation for Windows"
 /cygdrive/c/Programs/UEdit/Editor/Unity.exe \
@@ -91,8 +92,9 @@ echo "Starting upload to steam"
 echo "Please enter your steam developer-upload credentials"
 read -p 'Username: ' uservar
 read -sp 'Password: ' passvar
+read -p 'Steam Guard Code (Optional) :' guardvar
 
-$script_dir/ContentBuilder/builder/steamcmd.exe +login $uservar $passvar <<EOF
-run_app_build $script_dir/ContentBuilder/scripts/app_build_801140.vdf
+$script_dir/ContentBuilder/builder/steamcmd.exe +login $uservar $passvar $guardvar <<EOF
+run_app_build $vdfdir/app_build_801140.vdf
 quit
 EOF
