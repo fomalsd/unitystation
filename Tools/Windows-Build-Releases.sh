@@ -5,7 +5,7 @@ echo "Starting Unitystation buildscript from:"
 echo $script_dir
 cd ..
 cd UnityProject
-project_dir=$(pwd)
+project_dir=$(cygpath -m `pwd`)
 echo "Starting to build from Unityproject directory:"
 echo $project_dir
 winlog=$script_dir/Logs/WindowsBuild.log
@@ -15,76 +15,79 @@ srvlog=$script_dir/Logs/ServerBuild.log
 vdfdir=$(cygpath -m $script_dir/ContentBuilder/scripts/)
 
 echo "Attempting build of UnityStation for Windows"
-/cygdrive/c/Programs/UEdit/Editor/Unity.exe \
+/cygdrive/c/Program\ Files/Unity/Editor/Unity.exe \
 	-batchmode \
 	-nographics \
 	-silent-crashes \
-	-logFile $winlog \
+	-logFile $(cygpath -m $winlog) \
+	-projectPath $project_dir \
 	-executeMethod BuildScript.PerformWindowsBuild \
 	-quit
 rc0=$?
 echo "Build logs (Windows)"
-if pgrep -F "$winlog" &>/dev/null; 
-	then cat $winlog 
-else 
-	echo nope 
-fi
+cat $winlog 
 
+ echo "Attempting build of UnityStation for OSX"
+ /cygdrive/c/Program\ Files/Unity/Editor/Unity.exe \
+ 	-batchmode \
+ 	-nographics \
+ 	-silent-crashes \
+ 	-projectPath $project_dir \
+ 	-logFile $(cygpath -m $osxlog) \
+ 	-executeMethod BuildScript.PerformOSXBuild \
+ 	-quit
+ rc1=$?
+ echo "Build logs (OSX)"
+ cat $osxlog 
 
-echo "Attempting build of UnityStation for OSX"
-/cygdrive/c/Programs/UEdit/Editor/Unity.exe \
-	-batchmode \
-	-nographics \
-	-silent-crashes \
-	-logFile $osxlog \
-	-executeMethod BuildScript.PerformOSXBuild \
-	-quit
-rc1=$?
-echo "Build logs (OSX)"
-if pgrep -F "$osxlog" &>/dev/null; 
-	then cat $osxlog 
-else 
-	echo nope 
-fi
+ echo "Attempting build of UnityStation for Linux"
+ /cygdrive/c/Program\ Files/Unity/Editor/Unity.exe \
+ 	-batchmode \
+ 	-nographics \
+ 	-silent-crashes \
+ 	-projectPath $project_dir \
+ 	-logFile $(cygpath -m $linlog) \
+ 	-executeMethod BuildScript.PerformLinuxBuild \
+ 	-quit
+ rc2=$?
+ echo "Build logs (Linux)"
+ cat $linlog 
+ 
+# todo, not working
+# echo "Attempting build of UnityStation for Android"
+# /cygdrive/c/Program\ Files/Unity/Editor/Unity.exe \
+# 	-batchmode \
+# 	-nographics \
+# 	-silent-crashes \
+# 	-projectPath $project_dir \
+# 	-logFile $(cygpath -m $srvlog) \
+# 	-executeMethod BuildScript.PerformAndroidBuild \
+# 	-quit
+# rc3=$?
+# echo "Build logs (Android)"
+# cat $srvlog 
 
-echo "Attempting build of UnityStation for Linux"
-/cygdrive/c/Programs/UEdit/Editor/Unity.exe \
-	-batchmode \
-	-nographics \
-	-silent-crashes \
-	-logFile $linlog \
-	-executeMethod BuildScript.PerformLinuxBuild \
-	-quit
-rc2=$?
-echo "Build logs (Linux)"
-if pgrep -F "$linlog" &>/dev/null; 
-	then cat $linlog 
-else 
-	echo nope 
-fi
+# server build is now executed on server itself
+# echo "Attempting build of UnityStation Server"
+# /cygdrive/c/Program\ Files/Unity/Editor/Unity.exe \
+# 	-batchmode \
+# 	-nographics \
+# 	-silent-crashes \
+# 	-projectPath $project_dir \
+# 	-logFile $(cygpath -m $srvlog) \
+# 	-executeMethod BuildScript.PerformServerBuild \
+# 	-quit
+# rc3=$?
+# echo "Build logs (Server)"
+# cat $srvlog 
 
-echo "Attempting build of UnityStation Server"
-/cygdrive/c/Programs/UEdit/Editor/Unity.exe \
-	-batchmode \
-	-nographics \
-	-silent-crashes \
-	-logFile $srvlog \
-	-executeMethod BuildScript.PerformServerBuild \
-	-quit
-rc3=$?
-echo "Build logs (Server)"
-if pgrep -F "$srvlog" &>/dev/null; 
-	then cat $srvlog 
-else 
-	echo nope 
-fi
 echo "Building finished successfully"
 
-echo "Post processing builds"
-cp $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins/libsteam_api64.so $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins/x86_64/libsteam_api64.so
-cp $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins/libsteam_api.so $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins/x86_64/libsteam_api.so
-cp $script_dir/steam1007/linux64/steamclient.so $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins/x86_64/steamclient.so
-cp -Rf $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Mono
+ # echo "Post processing builds"
+ # cp $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins/libsteam_api64.so $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins/x86_64/libsteam_api64.so
+ # cp $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins/libsteam_api.so $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins/x86_64/libsteam_api.so
+ # cp $script_dir/steam1007/linux64/steamclient.so $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins/x86_64/steamclient.so
+ # cp -Rf $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Plugins $script_dir/ContentBuilder/content/Server/Unitystation-Server_Data/Mono
 
 echo "Post-Processing done"
 echo "Starting upload to steam"
