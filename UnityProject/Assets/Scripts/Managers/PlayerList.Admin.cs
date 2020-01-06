@@ -26,6 +26,9 @@ public partial class PlayerList
 	[Server]
 	void InitAdminController()
 	{
+		#if UNITY_ANDROID
+			return;
+		#endif
 		adminsPath = Path.Combine(Application.streamingAssetsPath, "admin", "admins.txt");
 		banPath = Path.Combine(Application.streamingAssetsPath, "admin", "banlist.json");
 

@@ -96,8 +96,8 @@ namespace Lobby
 
 		private void Update()
 		{
-			if (Input.GetKeyDown(KeyCode.F6))
-				if (Input.GetKeyDown(KeyCode.F6) && !BuildPreferences.isForRelease)
+			if (Input.GetKeyDown(KeyCode.F6) || UIManager.UseGamePad)
+				if (Input.GetKeyDown(KeyCode.F6) && !BuildPreferences.isForRelease || UIManager.UseGamePad)
 				{
 					//skip login
 					HideAllPanels();

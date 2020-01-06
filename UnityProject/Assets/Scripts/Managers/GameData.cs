@@ -56,11 +56,18 @@ public class GameData : MonoBehaviour
 
 	private void Init()
 	{
-		var buildInfo = JsonUtility.FromJson<BuildInfo>(File.ReadAllText(Path.Combine(Application.streamingAssetsPath, "buildinfo.json")));
-		BuildNumber = buildInfo.BuildNumber;
-		ForkName = buildInfo.ForkName;
-		Logger.Log($"Build Version is: {BuildNumber}");
-		CheckHeadlessState();
+		try
+		{
+			var buildInfo = JsonUtility.FromJson<BuildInfo>(File.ReadAllText(Path.Combine(Application.streamingAssetsPath, "buildinfo.json")));
+			BuildNumber = buildInfo.BuildNumber;
+			ForkName = buildInfo.ForkName;
+			Logger.Log($"Build Version is: {BuildNumber}");
+			CheckHeadlessState();
+		}
+		catch (Exception e)
+		{
+			Logger.LogError(e.Message);
+		}
 
 		if (IsTestMode)
 		{
@@ -192,7 +199,15 @@ public class GameData : MonoBehaviour
 
 	private void OnEnable()
 	{
-		Logger.RefreshPreferences();
+		try
+		{
+			Logger.RefreshPreferences();
+		}
+		catch (Exception e)
+		{
+			Logger.LogError(e.Message);
+		}
+		
 		if (IsTestMode)
 		{
 			return;
@@ -213,6 +228,8 @@ public class GameData : MonoBehaviour
 
 	private void OnLevelFinishedLoading(Scene scene, LoadSceneMode mode)
 	{
+		Application.targetFrameRate = 60;
+		
 		if (scene.name == "Lobby")
 		{
 			IsInGame = false;
