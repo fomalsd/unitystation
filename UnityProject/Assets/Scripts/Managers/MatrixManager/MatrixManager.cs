@@ -399,7 +399,7 @@ public partial class MatrixManager : MonoBehaviour
 			if (originDoor && !originDoor.GetComponent<RegisterDoor>().IsPassableTo(localTarget, isServer))
 				return originDoor;
 		}
-		
+
 		// No closed door on local tile, check target tile
 		Vector3Int localOrigin = Instance.WorldToLocalInt(worldOrigin, AtPoint(worldOrigin, isServer).Matrix);
 		var targetDoorList = GetAt<InteractableDoor>(targetPos, isServer);
@@ -478,9 +478,9 @@ public partial class MatrixManager : MonoBehaviour
 		Vector3Int worldTarget = worldOrigin + dir.To3Int();
 		List<PushPull> result = new List<PushPull>();
 
-		foreach ( PushPull pushPull in GetAt<PushPull>(worldTarget, isServer) )
+		foreach ( var registerTile in GetAt(worldTarget, isServer) )
 		{
-			PushPull pushable = pushPull;
+			var pushPull = registerTile.CustomTransform;
 
 			if ( pushPull && pushPull.gameObject != pusher && (isServer ? pushPull.IsSolidServer : pushPull.IsSolidClient) )
 			{
@@ -492,15 +492,15 @@ public partial class MatrixManager : MonoBehaviour
 					PushPull buckledPushPull = playerMove.BuckledObject.GetComponent<PushPull>();
 
 					if (buckledPushPull)
-						pushable = buckledPushPull;
+						pushPull = buckledPushPull;
 				}
 
 				if ( isServer ?
-					pushable.CanPushServer( worldTarget, Vector2Int.RoundToInt( dir ) )
-					: pushable.CanPushClient( worldTarget, Vector2Int.RoundToInt( dir ) )
+					pushPull.CanPushServer( worldTarget, Vector2Int.RoundToInt( dir ) )
+					: pushPull.CanPushClient( worldTarget, Vector2Int.RoundToInt( dir ) )
 				)
 				{
-					result.Add( pushable );
+					result.Add( pushPull );
 				}
 			}
 		}
@@ -562,6 +562,17 @@ public partial class MatrixManager : MonoBehaviour
 		for (var i = 0; i < Instance.ActiveMatrices.Count; i++)
 		{
 			t.AddRange( Get(i).Matrix.Get<T>( WorldToLocalInt(worldPos,i), isServer ) );
+		}
+
+		return t;
+	}
+	/// <see cref="Matrix.Get(UnityEngine.Vector3Int,bool)"/>
+	public static List<RegisterTile> GetAt(Vector3Int worldPos, bool isServer)
+	{
+		var t = new List<RegisterTile>();
+		for (var i = 0; i < Instance.ActiveMatrices.Count; i++)
+		{
+			t.AddRange( Get(i).Matrix.Get( WorldToLocalInt(worldPos,i), isServer ) );
 		}
 
 		return t;

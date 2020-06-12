@@ -227,19 +227,19 @@ public partial class PlayerSync
 			return;
 		}
 		// Is the object pushable (iterate through all of the objects at the position):
-		var pushPulls = MatrixManager.GetAt<PushPull>(worldTile, false);
-		for (int i = 0; i < pushPulls.Count; i++)
+		var registerTiles = MatrixManager.GetAt(worldTile, false);
+		for (int i = 0; i < registerTiles.Count; i++)
 		{
-			var pushPull = pushPulls[i];
-			if (pushPull && pushPull.gameObject != gameObject && pushPull.IsSolidClient)
+			var pushable = registerTiles[i].CustomTransform;
+			if (pushable && pushable.gameObject != gameObject && pushable.IsSolidClient)
 			{
 				//					Logger.LogTraceFormat( "Predictive pushing {0} from {1} to {2}", Category.PushPull, pushPulls[i].gameObject, worldTile, (Vector2)(Vector3)worldTile+(Vector2)direction );
-				if (pushPull.TryPredictivePush(worldTile, direction))
+				if (pushable.TryPredictivePush(worldTile, direction))
 				{
 					//telling server what we just predictively pushed this thing
 					//so that server could rollback it for client if it was wrong
 					//instead of leaving it messed up permanently on client side
-					CmdValidatePush(pushPull.gameObject);
+					CmdValidatePush(pushable.gameObject);
 				}
 				break;
 			}

@@ -32,7 +32,7 @@ public static class ServerValidations
 		var defaultLayer = LayerMask.NameToLayer("Default");
 		if (allowed == null) allowed = (rt) => false;
 		var blocker =
-			MatrixManager.GetAt<RegisterTile>(worldPosition.To3Int(), true)
+			MatrixManager.GetAt(worldPosition.To3Int(), true)
 				//ignore the object itself (if anchoring)
 				.Where(rt => rt.gameObject != anchoredObject)
 				//ignore performer

@@ -460,6 +460,8 @@ public class PushPull : NetworkBehaviour, IRightClickable, IServerSpawn {
 		floorDecal = GetComponent<FloorDecal>();
 		var pushable = Pushable; //don't remove this, it initializes Pushable listeners ^
 
+		Pushable.OnTileReached().AddListener(v => CheckQueue());
+
 		followAction = (oldPos, newPos) => {
 			Vector3Int currentPos = Pushable.ServerPosition;
 			if ( oldPos == newPos || oldPos == TransformState.HiddenPos || newPos == currentPos ) {
@@ -737,7 +739,7 @@ public class PushPull : NetworkBehaviour, IRightClickable, IServerSpawn {
 	//Server fields
 	private bool isBeingPushed;
 	private Vector3Int pushTarget = TransformState.HiddenPos;
-	private Queue<Tuple<Vector2Int, float>> pushRequestQueue = new Queue<Tuple<Vector2Int, float>>();
+	private Queue<(Vector2Int, float)> pushRequestQueue = new Queue<(Vector2Int, float)>();
 
 	//Client fields
 	private PushState pushPrediction = PushState.None;
@@ -750,11 +752,19 @@ public class PushPull : NetworkBehaviour, IRightClickable, IServerSpawn {
 
 	#region Push
 
+
+	/// <param name="dir"></param>
+	/// <param name="speed"></param>
+	/// <param name="dontInsist">don't queue this push if queue is already not empty</param>
 	[Server]
-	public void QueuePush( Vector2Int dir, float speed = Single.NaN, bool allowDiagonals = false )
+	public void QueuePush( Vector2Int dir, float speed = Single.NaN, bool dontInsist = false)
 	{
 //		Logger.LogTraceFormat( "{0}: queued push {1} {2}", Category.PushPull, gameObject.name, dir, speed );
-		pushRequestQueue.Enqueue( new Tuple<Vector2Int, float>(dir, speed) );
+		if (dontInsist && pushRequestQueue.Count > 0)
+		{
+			return;
+		}
+		pushRequestQueue.Enqueue( (dir, speed) );
 		CheckQueue();
 	}
 
@@ -762,21 +772,18 @@ public class PushPull : NetworkBehaviour, IRightClickable, IServerSpawn {
 	{
 		if ( pushRequestQueue.Count > 0 && !isBeingPushed )
 		{
-			var tuple = pushRequestQueue.Dequeue();
-			if ( !TryPush(tuple.Item1, tuple.Item2 ) )
+			if ( !TryPush(pushRequestQueue.Dequeue()) )
 			{
 				pushRequestQueue.Clear();
 			}
-			StartCoroutine( ReCheckQueueLater() );
 		}
 	}
 
-	private IEnumerator ReCheckQueueLater()
+	[Server]
+	private bool TryPush((Vector2Int dir,float speed) dirAndSpeed)
 	{
-		yield return WaitFor.Seconds(.2f);
-		CheckQueue();
+		return TryPush(dirAndSpeed.dir, dirAndSpeed.speed);
 	}
-
 
 	[Server]
 	public bool TryPush( Vector2Int dir, float speed = Single.NaN )

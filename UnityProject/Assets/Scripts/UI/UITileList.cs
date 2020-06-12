@@ -46,7 +46,7 @@ public class UITileList : MonoBehaviour
 		position = matrix.transform.InverseTransformPoint(position);
 		Vector3Int tilePosition = Vector3Int.FloorToInt(position);
 
-		var registerTiles = matrix.Get<RegisterTile>(tilePosition, false);
+		var registerTiles = matrix.Get(tilePosition, false);
 
 		var result = registerTiles.Select(x => x.gameObject).ToList();
 

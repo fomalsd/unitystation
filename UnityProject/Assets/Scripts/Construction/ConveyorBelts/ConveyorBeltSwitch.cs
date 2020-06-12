@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Mirror;
 using UnityEngine;
+using UnityEngine.Profiling;
 using Debug = UnityEngine.Debug;
 
 public class ConveyorBeltSwitch : NetworkBehaviour, ICheckedInteractable<HandApply>
@@ -18,7 +19,7 @@ public class ConveyorBeltSwitch : NetworkBehaviour, ICheckedInteractable<HandApp
 
 	private float timeElapsed = 0;
 
-	[SerializeField] private float ConveyorBeltSpeed = 0.5f;
+	[SerializeField] private float ConveyorBeltSpeed = 0.05f;
 
 	[SyncVar(hook = nameof(SyncSwitchState))]
 	public State currentState;
@@ -49,13 +50,10 @@ public class ConveyorBeltSwitch : NetworkBehaviour, ICheckedInteractable<HandApp
 	protected virtual void UpdateMe()
 	{
 		if (currentState == State.Off) return;
+		Profiler.BeginSample("ConveyorBeltSwitch");
 
-		timeElapsed += Time.deltaTime;
-		if (timeElapsed > ConveyorBeltSpeed)
-		{
-			MoveConveyorBelt();
-			timeElapsed = 0;
-		}
+		MoveConveyorBelt();
+		Profiler.EndSample();
 	}
 
 	public bool WillInteract(HandApply interaction, NetworkSide side)

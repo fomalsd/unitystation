@@ -234,21 +234,22 @@ public partial class PlayerSync : NetworkBehaviour, IPushable, IPlayerControllab
 		GameObject except = null)
 	{
 		firstPushable = null;
-		var pushables = MatrixManager.GetAt<PushPull>(stateWorldPosition.CutToInt(), isServer);
-		if (pushables.Count == 0)
+		var registerTiles = MatrixManager.GetAt(stateWorldPosition.CutToInt(), isServer);
+		if (registerTiles.Count == 0)
 		{
 			return false;
 		}
 
-		for (var i = 0; i < pushables.Count; i++)
+		for (var i = 0; i < registerTiles.Count; i++)
 		{
-			var pushable = pushables[i];
-			if (pushable.gameObject == this.gameObject || except != null && pushable.gameObject == except)
+			var pushable = registerTiles[i];
+			if (pushable.gameObject == this.gameObject || except != null && pushable.gameObject == except
+				|| !pushable.CustomTransform)
 			{
 				continue;
 			}
 
-			firstPushable = pushable;
+			firstPushable = pushable.CustomTransform;
 			return true;
 		}
 

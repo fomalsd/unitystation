@@ -39,7 +39,7 @@ public class RegisterTile : NetworkBehaviour, IServerDespawn
 	/// <summary>
 	/// Object layer this gameobject is in (all registertiles live in an object layer).
 	/// </summary>
-	public ObjectLayer ObjectObjectLayer => objectLayer;
+	public ObjectLayer ObjectLayer => objectLayer;
 
 	/// <summary>
 	/// Tile change manager of the matrix this object is on.

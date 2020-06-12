@@ -3,37 +3,37 @@ using UnityEngine;
 
 public static class ConveyorDirections
 {
-	public static Dictionary<ConveyorBelt.ConveyorDirection, Vector3> directionsForward =
-		new Dictionary<ConveyorBelt.ConveyorDirection, Vector3>()
+	public static Dictionary<ConveyorBelt.ConveyorDirection, Vector3Int> directionsForward =
+		new Dictionary<ConveyorBelt.ConveyorDirection, Vector3Int>()
 		{
-			{ConveyorBelt.ConveyorDirection.Up, Vector3.up},
-			{ConveyorBelt.ConveyorDirection.Right, Vector3.right},
-			{ConveyorBelt.ConveyorDirection.Down, Vector3.down},
-			{ConveyorBelt.ConveyorDirection.Left, Vector3.left},
-			{ConveyorBelt.ConveyorDirection.LeftDown, Vector3.down},
-			{ConveyorBelt.ConveyorDirection.LeftUp, Vector3.up},
-			{ConveyorBelt.ConveyorDirection.RightDown, Vector3.down},
-			{ConveyorBelt.ConveyorDirection.RightUp, Vector3.up},
-			{ConveyorBelt.ConveyorDirection.DownLeft, Vector3.left},
-			{ConveyorBelt.ConveyorDirection.UpLeft, Vector3.left},
-			{ConveyorBelt.ConveyorDirection.DownRight, Vector3.right},
-			{ConveyorBelt.ConveyorDirection.UpRight, Vector3.right}
+			{ConveyorBelt.ConveyorDirection.Up, Vector3Int.up},
+			{ConveyorBelt.ConveyorDirection.Right, Vector3Int.right},
+			{ConveyorBelt.ConveyorDirection.Down, Vector3Int.down},
+			{ConveyorBelt.ConveyorDirection.Left, Vector3Int.left},
+			{ConveyorBelt.ConveyorDirection.LeftDown, Vector3Int.down},
+			{ConveyorBelt.ConveyorDirection.LeftUp, Vector3Int.up},
+			{ConveyorBelt.ConveyorDirection.RightDown, Vector3Int.down},
+			{ConveyorBelt.ConveyorDirection.RightUp, Vector3Int.up},
+			{ConveyorBelt.ConveyorDirection.DownLeft, Vector3Int.left},
+			{ConveyorBelt.ConveyorDirection.UpLeft, Vector3Int.left},
+			{ConveyorBelt.ConveyorDirection.DownRight, Vector3Int.right},
+			{ConveyorBelt.ConveyorDirection.UpRight, Vector3Int.right}
 		};
 
-	public static Dictionary<ConveyorBelt.ConveyorDirection, Vector3> directionsBackward =
-		new Dictionary<ConveyorBelt.ConveyorDirection, Vector3>()
+	public static Dictionary<ConveyorBelt.ConveyorDirection, Vector3Int> directionsBackward =
+		new Dictionary<ConveyorBelt.ConveyorDirection, Vector3Int>()
 		{
-			{ConveyorBelt.ConveyorDirection.Up, Vector3.down},
-			{ConveyorBelt.ConveyorDirection.Right, Vector3.left},
-			{ConveyorBelt.ConveyorDirection.Down, Vector3.up},
-			{ConveyorBelt.ConveyorDirection.Left, Vector3.right},
-			{ConveyorBelt.ConveyorDirection.LeftDown, Vector3.left},
-			{ConveyorBelt.ConveyorDirection.LeftUp, Vector3.left},
-			{ConveyorBelt.ConveyorDirection.RightDown, Vector3.right},
-			{ConveyorBelt.ConveyorDirection.RightUp, Vector3.right},
-			{ConveyorBelt.ConveyorDirection.DownLeft, Vector3.down},
-			{ConveyorBelt.ConveyorDirection.UpLeft, Vector3.up},
-			{ConveyorBelt.ConveyorDirection.DownRight, Vector3.down},
-			{ConveyorBelt.ConveyorDirection.UpRight, Vector3.up}
+			{ConveyorBelt.ConveyorDirection.Up, Vector3Int.down},
+			{ConveyorBelt.ConveyorDirection.Right, Vector3Int.left},
+			{ConveyorBelt.ConveyorDirection.Down, Vector3Int.up},
+			{ConveyorBelt.ConveyorDirection.Left, Vector3Int.right},
+			{ConveyorBelt.ConveyorDirection.LeftDown, Vector3Int.left},
+			{ConveyorBelt.ConveyorDirection.LeftUp, Vector3Int.left},
+			{ConveyorBelt.ConveyorDirection.RightDown, Vector3Int.right},
+			{ConveyorBelt.ConveyorDirection.RightUp, Vector3Int.right},
+			{ConveyorBelt.ConveyorDirection.DownLeft, Vector3Int.down},
+			{ConveyorBelt.ConveyorDirection.UpLeft, Vector3Int.up},
+			{ConveyorBelt.ConveyorDirection.DownRight, Vector3Int.down},
+			{ConveyorBelt.ConveyorDirection.UpRight, Vector3Int.up}
 		};
 }

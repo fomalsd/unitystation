@@ -25,7 +25,7 @@ public static class VariableViewer
 		Location = matrix.transform.InverseTransformPoint(Location);
 		Vector3Int tilePosition = Vector3Int.FloorToInt(Location);
 
-		var registerTiles = matrix.Get<RegisterTile>(tilePosition, false);
+		var registerTiles = matrix.Get(tilePosition, false);
 
 		List<GameObject> _Objects = registerTiles.Select(x => x.gameObject).ToList();
 

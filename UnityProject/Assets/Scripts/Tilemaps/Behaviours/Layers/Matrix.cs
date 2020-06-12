@@ -248,7 +248,7 @@ public class  Matrix : MonoBehaviour
 		}
 
 		var filtered = new List<T>();
-		foreach ( RegisterTile t in (isServer ? ServerObjects : ClientObjects).Get(localPosition) )
+		foreach ( RegisterTile t in Get(localPosition, isServer) )
 		{
 			T x = t.GetComponent<T>();
 			if (x != null)
@@ -258,6 +258,14 @@ public class  Matrix : MonoBehaviour
 		}
 
 		return filtered;
+	}
+
+	/// <summary>
+	/// Cheaper way to get objects on position, less allocations
+	/// </summary>
+	public IEnumerable<RegisterTile> Get(Vector3Int localPosition, bool isServer)
+	{
+		return (isServer ? ServerObjects : ClientObjects).Get(localPosition);
 	}
 
 	public T GetFirst<T>(Vector3Int position, bool isServer) where T : MonoBehaviour

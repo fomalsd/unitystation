@@ -440,12 +440,16 @@ public partial class MatrixManager
 			{
 				return;
 			}
-			foreach ( var pushPull in matrix.Matrix.Get<PushPull>( cellPos, true ) )
+			foreach ( var registerTile in matrix.Matrix.Get( cellPos, true ) )
 			{
+				if (registerTile.CustomTransform == null)
+				{
+					continue;
+				}
 				byte pushes = (byte) Mathf.Clamp( speed / 4, 1, 4 );
 				for ( int j = 0; j < pushes; j++ )
 				{
-					pushPull.QueuePush( pushVector, speed * Random.Range( 0.8f, 1.1f ) );
+					registerTile.CustomTransform.QueuePush( pushVector, speed * Random.Range( 0.8f, 1.1f ) );
 				}
 			}
 		}

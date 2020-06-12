@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 [SelectionBase]
 [ExecuteInEditMode]
@@ -10,7 +11,7 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 	[SerializeField] private SpriteHandler spriteHandler = null;
 
 	private RegisterTile registerTile;
-	private Vector3 position;
+	private Vector3Int transportDirection;
 
 	public ConveyorBeltSwitch AssignedSwitch { get; private set; }
 
@@ -28,19 +29,9 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 		new Vector2Int(1, 0), new Vector2Int(0, -1)
 	};
 
-	private bool processMoves = false;
-	private float waitToMove = 0f;
-	private Queue<PlayerSync> playerCache = new Queue<PlayerSync>();
-	private Queue<CustomNetTransform> cntCache = new Queue<CustomNetTransform>();
-
 	private void OnEnable()
 	{
 		OnStart();
-	}
-
-	private void OnDisable()
-	{
-		if(isServer) UpdateManager.Remove(CallbackType.UPDATE, UpdateMe);
 	}
 
 	// Only runs in editor - useful for updating the sprite direction
@@ -48,31 +39,6 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 	private void OnValidate()
 	{
 		RefreshSprites();
-	}
-
-	//Avoiding the use of coroutines as this could run on many conveyor belts
-	//This is needed so items and players aren't getting yeeted from being pushed by belts
-	//each frame
-	void UpdateMe()
-	{
-		if (!processMoves) return;
-
-		waitToMove += Time.deltaTime;
-		if (waitToMove > 0.1f)
-		{
-			processMoves = false;
-			waitToMove = 0f;
-
-			while (playerCache.Count > 0)
-			{
-				TransportPlayer(playerCache.Dequeue());
-			}
-
-			while (cntCache.Count > 0)
-			{
-				Transport(cntCache.Dequeue());
-			}
-		}
 	}
 
 	private void OnStart()
@@ -83,9 +49,7 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 
 	public override void OnStartServer()
 	{
-		CurrentStatus = ConveyorStatus.Off;
-		RefreshSprites();
-		UpdateManager.Add(CallbackType.UPDATE, UpdateMe);
+		SyncStatus(ConveyorStatus.Off, ConveyorStatus.Off);
 	}
 
 	public override void OnStartClient()
@@ -93,7 +57,7 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 		RefreshSprites();
 	}
 
-	public void SyncDirection(ConveyorDirection oldValue, ConveyorDirection newValue)
+	public void SyncDirection(ConveyorDirection _, ConveyorDirection newValue)
 	{
 		CurrentDirection = newValue;
 		GetPositionOffset();
@@ -105,13 +69,13 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 		switch (CurrentStatus)
 		{
 			case ConveyorStatus.Forward:
-				position = ConveyorDirections.directionsForward[CurrentDirection];
+				transportDirection = ConveyorDirections.directionsForward[CurrentDirection];
 				break;
 			case ConveyorStatus.Backward:
-				position = ConveyorDirections.directionsBackward[CurrentDirection];
+				transportDirection = ConveyorDirections.directionsBackward[CurrentDirection];
 				break;
 			default:
-				position = Vector3.up;
+				transportDirection = Vector3Int.up;
 				break;
 		}
 	}
@@ -119,7 +83,7 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 	[Server]
 	public void SetBeltFromBuildMenu(ConveyorDirection direction)
 	{
-		CurrentDirection = direction;
+		SyncDirection(direction, direction);
 		//Discover any neighbours:
 		for (int i = 0; i < searchDirs.Length; i++)
 		{
@@ -131,7 +95,7 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 				if (conveyorBelt.AssignedSwitch != null)
 				{
 					conveyorBelt.AssignedSwitch.AddConveyorBelt(new List<ConveyorBelt>{this});
-					CurrentStatus = conveyorBelt.CurrentStatus;
+					SyncStatus(conveyorBelt.CurrentStatus,conveyorBelt.CurrentStatus);
 					break;
 				}
 			}
@@ -140,8 +104,9 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 
 	public void MoveBelt()
 	{
-		RefreshSprites();
+		Profiler.BeginSample("MoveBelt");
 		if (isServer) DetectItems();
+		Profiler.EndSample();
 	}
 
 	public void SetSwitchRef(ConveyorBeltSwitch switchRef)
@@ -160,23 +125,18 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 		switch (switchState)
 		{
 			case ConveyorBeltSwitch.State.Off:
-				CurrentStatus = ConveyorStatus.Off;
+				SyncStatus(ConveyorStatus.Off, ConveyorStatus.Off);
 				break;
 			case ConveyorBeltSwitch.State.Forward:
-				CurrentStatus = ConveyorStatus.Forward;
+				SyncStatus(ConveyorStatus.Forward,ConveyorStatus.Forward);
 				break;
 			case ConveyorBeltSwitch.State.Backward:
-				CurrentStatus = ConveyorStatus.Backward;
+				SyncStatus(ConveyorStatus.Backward,ConveyorStatus.Backward);
 				break;
-			default:
-				throw new ArgumentOutOfRangeException(nameof(switchState), switchState, null);
 		}
-
-		GetPositionOffset();
-		RefreshSprites();
 	}
 
-	private void SyncStatus(ConveyorStatus oldStatus, ConveyorStatus newStatus)
+	private void SyncStatus(ConveyorStatus _, ConveyorStatus newStatus)
 	{
 		CurrentStatus = newStatus;
 		GetPositionOffset();
@@ -209,37 +169,33 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 	private void DetectItems()
 	{
 		if (CurrentStatus == ConveyorStatus.Off) return;
-		GetPositionOffset();
-		if (!Matrix.IsPassableAt(registerTile.LocalPositionServer,
-			Vector3Int.RoundToInt(registerTile.LocalPositionServer + position), true)) return;
 
-		foreach (var player in Matrix.Get<PlayerSync>(registerTile.LocalPositionServer, ObjectType.Player, true))
+		Profiler.BeginSample("BeltPassableCheck");
+		bool pushBlocked = !Matrix.IsPassableAt(registerTile.LocalPositionServer,
+			Vector3Int.RoundToInt(registerTile.LocalPositionServer + transportDirection), true);
+		Profiler.EndSample();
+		if (pushBlocked)
 		{
-			playerCache.Enqueue(player);
+			return;
 		}
-
-		foreach (var item in Matrix.Get<CustomNetTransform>(registerTile.LocalPositionServer, true))
+		Profiler.BeginSample("BeltTransport");
+		foreach (var item in Matrix.Get(registerTile.LocalPositionServer, true))
 		{
-			if (item.gameObject == gameObject || item.PushPull == null || !item.PushPull.IsPushable) continue;
+			if (item == null || item.gameObject == this.gameObject
+			|| !item.CustomTransform || !item.CustomTransform.IsPushable)
+			{
+				continue;
+			}
 
-			cntCache.Enqueue(item);
+			Transport(item.CustomTransform);
 		}
-
-		waitToMove = 0f;
-		processMoves = true;
+		Profiler.EndSample();
 	}
 
 	[Server]
-	public virtual void TransportPlayer(PlayerSync player)
+	public virtual void Transport(PushPull pushPull)
 	{
-		//push player to the next tile
-		player?.Push(position.To2Int());
-	}
-
-	[Server]
-	public virtual void Transport(CustomNetTransform item)
-	{
-		item?.Push(position.To2Int());
+		pushPull.QueuePush(transportDirection.To2Int(),3f, dontInsist: true);
 	}
 
 	public enum ConveyorStatus
@@ -311,9 +267,7 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 				$"{interaction.Performer.ExpensiveName()} redirects the conveyor belt.",
 				() =>
 				{
-					CurrentDirection = (ConveyorDirection) count;
-
-					spriteHandler.ChangeSpriteVariant(count);
+					SyncDirection((ConveyorDirection)count, (ConveyorDirection)count);
 				});
 		}
 	}

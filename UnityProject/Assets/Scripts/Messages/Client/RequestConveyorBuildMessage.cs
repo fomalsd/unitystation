@@ -36,7 +36,7 @@ public class RequestConveyorBuildMessage : ClientMessage
 
 		//if we are building something impassable, check if there is anything on the space other than the performer.
 		var atPosition =
-			MatrixManager.GetAt<RegisterTile>((Vector3Int) SentByPlayer.GameObject.TileWorldPosition(), true);
+			MatrixManager.GetAt((Vector3Int) SentByPlayer.GameObject.TileWorldPosition(), true);
 
 		if (entry.Prefab == null)
 		{
