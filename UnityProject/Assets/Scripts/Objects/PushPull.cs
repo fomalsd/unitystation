@@ -762,6 +762,7 @@ public class PushPull : NetworkBehaviour, IRightClickable, IServerSpawn {
 //		Logger.LogTraceFormat( "{0}: queued push {1} {2}", Category.PushPull, gameObject.name, dir, speed );
 		if (dontInsist && pushRequestQueue.Count > 0)
 		{
+			CheckQueue();
 			return;
 		}
 		pushRequestQueue.Enqueue( (dir, speed) );

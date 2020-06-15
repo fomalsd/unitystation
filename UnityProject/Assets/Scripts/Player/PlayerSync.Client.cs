@@ -496,7 +496,10 @@ public partial class PlayerSync
 			bool wrongMatrix = playerState.MatrixId != predictedState.MatrixId && playerState.MoveNumber == predictedState.MoveNumber;
 			if (serverAhead || posMismatch || wrongMatrix)
 			{
-				Logger.LogWarning($"{nameof(serverAhead)}={serverAhead}, {nameof(posMismatch)}={posMismatch}, {nameof(wrongMatrix)}={wrongMatrix}", Category.Movement);
+				Logger.LogTraceFormat("{0}={1}, {2}={3}, {4}={5}", Category.Movement,
+					nameof(serverAhead), serverAhead,
+					nameof(posMismatch), posMismatch,
+					nameof(wrongMatrix), wrongMatrix);
 				ClearQueueClient();
 				RollbackPrediction();
 			}
