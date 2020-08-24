@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using Mirror;
+using ScriptableObjects;
 using UnityEngine;
 using UnityEngine.Profiling;
 
 [SelectionBase]
 [ExecuteInEditMode]
-public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
+public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, ISetMultitoolMaster
 {
 	[SerializeField] private SpriteHandler spriteHandler = null;
 
@@ -17,10 +18,7 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 
 	private Matrix Matrix => registerTile.Matrix;
 
-	[SyncVar(hook = nameof(SyncDirection))]
 	public ConveyorDirection CurrentDirection;
-
-	[SyncVar(hook = nameof(SyncStatus))]
 	public ConveyorStatus CurrentStatus;
 
 	Vector2Int[] searchDirs =
@@ -49,7 +47,7 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 
 	public override void OnStartServer()
 	{
-		SyncStatus(ConveyorStatus.Off, ConveyorStatus.Off);
+		SyncStatus( ConveyorStatus.Off);
 	}
 
 	public override void OnStartClient()
@@ -95,7 +93,7 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 				if (conveyorBelt.AssignedSwitch != null)
 				{
 					conveyorBelt.AssignedSwitch.AddConveyorBelt(new List<ConveyorBelt>{this});
-					SyncStatus(conveyorBelt.CurrentStatus,conveyorBelt.CurrentStatus);
+					SyncStatus( conveyorBelt.CurrentStatus);
 					break;
 				}
 			}
@@ -125,18 +123,18 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 		switch (switchState)
 		{
 			case ConveyorBeltSwitch.State.Off:
-				SyncStatus(ConveyorStatus.Off, ConveyorStatus.Off);
+				SyncStatus( ConveyorStatus.Off);
 				break;
 			case ConveyorBeltSwitch.State.Forward:
-				SyncStatus(ConveyorStatus.Forward,ConveyorStatus.Forward);
+				SyncStatus( ConveyorStatus.Forward);
 				break;
 			case ConveyorBeltSwitch.State.Backward:
-				SyncStatus(ConveyorStatus.Backward,ConveyorStatus.Backward);
+				SyncStatus( ConveyorStatus.Backward);
 				break;
 		}
 	}
 
-	private void SyncStatus(ConveyorStatus _, ConveyorStatus newStatus)
+	private void SyncStatus( ConveyorStatus newStatus)
 	{
 		CurrentStatus = newStatus;
 		GetPositionOffset();
@@ -271,4 +269,18 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>
 				});
 		}
 	}
+
+	//######################################## Multitool interaction ##################################
+
+	[SerializeField]
+	private MultitoolConnectionType conType = MultitoolConnectionType.Conveyor;
+	public MultitoolConnectionType ConType  => conType;
+
+	private bool multiMaster = true;
+	public bool MultiMaster => multiMaster;
+
+	public void AddSlave(object SlaveObject)
+	{
+	}
 }
+

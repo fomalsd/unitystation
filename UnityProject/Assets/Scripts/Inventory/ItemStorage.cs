@@ -13,8 +13,7 @@ using UnityEngine.Serialization;
 ///
 /// The ways in which the storage can be interacted with is handled by other components.
 ///
-/// Note that items stored in an ItemStorage can themselves have ItemStorage (for example, storing a backpack
-/// in a player's inventory)!
+/// Note that items stored in an ItemStorage can themselveOnDespawnServer
 /// </summary>
 public class ItemStorage : MonoBehaviour, IServerLifecycle, IServerInventoryMove, IClientInventoryMove
 {
@@ -196,6 +195,7 @@ public class ItemStorage : MonoBehaviour, IServerLifecycle, IServerInventoryMove
 	{
 		if (populator == null) return;
 		if (!CustomNetworkManager.IsServer) return;
+		if (!context.SpawnInfo.SpawnItems) return;
 		populator.PopulateItemStorage(this, context);
 	}
 
@@ -248,6 +248,8 @@ public class ItemStorage : MonoBehaviour, IServerLifecycle, IServerInventoryMove
 	/// contained in this storage.
 	///
 	/// As you should expect, this can create a bit of garbage so use sparingly.
+	///
+	/// DOES NOT CHECK SUB-SUBSTORAGES.
 	/// </summary>
 	public IEnumerable<ItemSlot> GetItemSlotTree()
 	{

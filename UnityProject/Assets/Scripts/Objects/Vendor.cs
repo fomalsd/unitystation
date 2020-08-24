@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using NUnit.Framework;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
@@ -8,7 +9,7 @@ using UnityEngine.Serialization;
 /// when clicking on vendor with a VendingRestock item in hand.
 /// </summary>
 [RequireComponent(typeof(HasNetworkTab))]
-public class Vendor : MonoBehaviour, ICheckedInteractable<HandApply>, IServerSpawn
+public class Vendor : MonoBehaviour, ICheckedInteractable<HandApply>, IAPCPowered, IServerSpawn
 {
 	/// <summary>
 	/// Scatter spawned items a bit to not allow stacking in one position
@@ -37,6 +38,8 @@ public class Vendor : MonoBehaviour, ICheckedInteractable<HandApply>, IServerSpa
 	[SerializeField]
 	private string noAccessMessage = "Access denied!";
 
+	public bool isEmagged;
+
 	[HideInInspector]
 	public List<VendorItem> VendorContent = new List<VendorItem>();
 
@@ -44,7 +47,8 @@ public class Vendor : MonoBehaviour, ICheckedInteractable<HandApply>, IServerSpa
 
 	public VendorUpdateEvent OnRestockUsed = new VendorUpdateEvent();
 	public VendorItemUpdateEvent OnItemVended = new VendorItemUpdateEvent();
-
+	public PowerStates ActualCurrentPowerState = PowerStates.On;
+	public bool DoesntRequirePower = false;
 	private void Awake()
 	{
 		// ensure we have a net tab set up with the correct type
@@ -68,6 +72,7 @@ public class Vendor : MonoBehaviour, ICheckedInteractable<HandApply>, IServerSpa
 	{
 		//Checking if avaliable for restock
 		if (!DefaultWillInteract.Default(interaction, side)) return false;
+		if (Validations.HasItemTrait(interaction.HandObject, CommonTraits.Instance.Emag)) return true;
 		if (!Validations.HasComponent<VendingRestock>(interaction.HandObject)) return false;
 		return true;
 	}
@@ -82,6 +87,10 @@ public class Vendor : MonoBehaviour, ICheckedInteractable<HandApply>, IServerSpa
 		{
 			OnRestockUsed?.Invoke();
 			Inventory.ServerDespawn(interaction.HandSlot);
+		}
+		if (Validations.HasItemTrait(interaction.HandObject, CommonTraits.Instance.Emag))
+		{
+			isEmagged = true;
 		}
 	}
 
@@ -145,7 +154,7 @@ public class Vendor : MonoBehaviour, ICheckedInteractable<HandApply>, IServerSpa
 		}
 
 		// check player access
-		if (player != null && accessRestrictions)
+		if (player != null && accessRestrictions && !isEmagged)
 		{
 			var hasAccess = accessRestrictions.CheckAccess(player.GameObject);
 			if (!hasAccess)
@@ -220,6 +229,16 @@ public class Vendor : MonoBehaviour, ICheckedInteractable<HandApply>, IServerSpa
 		}
 
 		OnItemVended.Invoke(vendorItem);
+
+	}
+
+	public void PowerNetworkUpdate(float Voltage)
+	{
+	}
+
+	public void StateUpdate(PowerStates State)
+	{
+		ActualCurrentPowerState = State;
 	}
 }
 
@@ -234,6 +253,7 @@ public class VendorItemUpdateEvent : UnityEvent<VendorItem> { }
 [System.Serializable]
 public class VendorItem
 {
+	public string ItemName;
 	public GameObject Item;
 	public int Stock = 5;
 
@@ -241,5 +261,6 @@ public class VendorItem
 	{
 		this.Item = item.Item;
 		this.Stock = item.Stock;
+		this.ItemName = Item.name;
 	}
 }

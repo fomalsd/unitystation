@@ -35,6 +35,8 @@ public partial class Chat : MonoBehaviour
 	//Does the ghost hear everyone or just local
 	public bool GhostHearAll { get; set; } = true;
 
+	public static bool OOCMute = false;
+
 	/// <summary>
 	/// Set the scene based chat relay at the start of every round
 	/// </summary>
@@ -65,13 +67,6 @@ public partial class Chat : MonoBehaviour
 		if (!isOOC)
 		{
 			processedMessage = ProcessMessage(sentByPlayer, message);
-
-			if (player.mind.occupation.JobType == JobType.MIME && player.mind.IsMiming
-				&& !processedMessage.chatModifiers.HasFlag(ChatModifier.Emote))
-			{
-				AddWarningMsgFromServer(sentByPlayer.GameObject, "You can't talk because you made a vow of silence.");
-				return;
-			}
 		}
 
 		var chatEvent = new ChatEvent
@@ -88,15 +83,21 @@ public partial class Chat : MonoBehaviour
 		{
 			chatEvent.speaker = sentByPlayer.Username;
 
-			if (PlayerList.Instance.IsAdmin(sentByPlayer.UserId))
+			var isAdmin = PlayerList.Instance.IsAdmin(sentByPlayer.UserId);
+
+			if (isAdmin)
 			{
 				chatEvent.speaker = "[Admin] " + chatEvent.speaker;
 			}
+
+			if (OOCMute && !isAdmin) return;
 
 			Instance.addChatLogServer.Invoke(chatEvent);
 
 			//Sends OOC message to a discord webhook
 			DiscordWebhookMessage.Instance.AddWebHookMessageToQueue(DiscordWebhookURLs.DiscordWebhookOOCURL, message, chatEvent.speaker, ServerData.ServerConfig.DiscordWebhookOOCMentionsID);
+
+			if (!ServerData.ServerConfig.DiscordWebhookSendOOCToAllChat) return;
 
 			//Send it to All chat
 			DiscordWebhookMessage.Instance.AddWebHookMessageToQueue(DiscordWebhookURLs.DiscordWebhookAllChatURL, $"[{ChatChannel.OOC}]  {message}\n", chatEvent.speaker);
@@ -108,6 +109,12 @@ public partial class Chat : MonoBehaviour
 		// Check if the player is allowed to talk:
 		if (player != null && player.playerHealth != null)
 		{
+			if (!player.IsDeadOrGhost && player.mind.IsMiming && !processedMessage.chatModifiers.HasFlag(ChatModifier.Emote))
+			{
+				AddWarningMsgFromServer(sentByPlayer.GameObject, "You can't talk because you made a vow of silence.");
+				return;
+			}
+
 			if (player.playerHealth.IsCrit || player.playerHealth.IsCardiacArrest)
 			{
 				if (!player.playerHealth.IsDead)
@@ -142,12 +149,14 @@ public partial class Chat : MonoBehaviour
 				chatEvent.channels = (ChatChannel)value;
 				Instance.addChatLogServer.Invoke(chatEvent);
 
-				discordMessage += $"[{chatEvent.channels}]  {message}\n";
+				discordMessage += $"[{chatEvent.channels}] ";
 			}
 		}
 
+		discordMessage += $"\n{chatEvent.speaker}: {message}\n";
+
 		//Sends All Chat messages to a discord webhook
-		DiscordWebhookMessage.Instance.AddWebHookMessageToQueue(DiscordWebhookURLs.DiscordWebhookAllChatURL, discordMessage, chatEvent.speaker);
+		DiscordWebhookMessage.Instance.AddWebHookMessageToQueue(DiscordWebhookURLs.DiscordWebhookAllChatURL, discordMessage, "");
 	}
 
 	/// <summary>
@@ -407,7 +416,7 @@ public partial class Chat : MonoBehaviour
 	/// <param name="message">The message to show in the chat stream</param>
 	/// <param name="worldPos">The position of the local message</param>
 	/// <param name="originator">The object (i.e. vending machine) that said message</param>
-	public static void AddLocalMsgToChat(string message, Vector2 worldPos, GameObject originator)
+	public static void AddLocalMsgToChat(string message, Vector2 worldPos, GameObject originator, string speakerName = null)
 	{
 		if (!IsServer()) return;
 		Instance.TryStopCoroutine(ref composeMessageHandle);
@@ -417,7 +426,8 @@ public partial class Chat : MonoBehaviour
 			channels = ChatChannel.Local,
 			message = message,
 			position = worldPos,
-			originator = originator
+			originator = originator,
+			speaker = speakerName
 		});
 	}
 
