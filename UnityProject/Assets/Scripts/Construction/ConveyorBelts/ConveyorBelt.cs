@@ -1,10 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mirror;
 using ScriptableObjects;
 using UnityEngine;
 using UnityEngine.Profiling;
 
+namespace Construction.Conveyors
+{
 [SelectionBase]
 [ExecuteInEditMode]
 public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, ISetMultitoolMaster
@@ -18,14 +20,21 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, I
 
 	private Matrix Matrix => registerTile.Matrix;
 
-	public ConveyorDirection CurrentDirection;
-	public ConveyorStatus CurrentStatus;
+	[Tooltip("Set this conveyor belt's initial direction.")]
+	[SerializeField]
+	private ConveyorDirection CurrentDirection = default;
+
+	[Tooltip("Set this conveyor belt's initial status.")]
+	[SerializeField]
+	private ConveyorStatus CurrentStatus = default;
 
 	Vector2Int[] searchDirs =
 	{
 		new Vector2Int(-1, 0), new Vector2Int(0, 1),
 		new Vector2Int(1, 0), new Vector2Int(0, -1)
 	};
+
+	#region Lifecycle
 
 	private void OnEnable()
 	{
@@ -55,6 +64,11 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, I
 		RefreshSprites();
 	}
 
+	#endregion Lifecycle
+
+	#region Belt Operation
+
+
 	public void SyncDirection(ConveyorDirection _, ConveyorDirection newValue)
 	{
 		CurrentDirection = newValue;
@@ -62,21 +76,7 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, I
 		RefreshSprites();
 	}
 
-	void GetPositionOffset()
-	{
-		switch (CurrentStatus)
-		{
-			case ConveyorStatus.Forward:
-				transportDirection = ConveyorDirections.directionsForward[CurrentDirection];
-				break;
-			case ConveyorStatus.Backward:
-				transportDirection = ConveyorDirections.directionsBackward[CurrentDirection];
-				break;
-			default:
-				transportDirection = Vector3Int.up;
-				break;
-		}
-	}
+	#endregion Belt Operation
 
 	[Server]
 	public void SetBeltFromBuildMenu(ConveyorDirection direction)
@@ -93,7 +93,7 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, I
 				if (conveyorBelt.AssignedSwitch != null)
 				{
 					conveyorBelt.AssignedSwitch.AddConveyorBelt(new List<ConveyorBelt>{this});
-					SyncStatus( conveyorBelt.CurrentStatus);
+					conveyorBelt.SyncStatus( conveyorBelt.CurrentStatus);
 					break;
 				}
 			}
@@ -112,27 +112,27 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, I
 		AssignedSwitch = switchRef;
 	}
 
-	/// <summary>
-	/// This method is called from the connected Conveyor Switch when its state changes.
-	/// It will update the belt current state and its sprite.
-	/// </summary>
-	/// <param name="switchState"></param>
-	[Server]
-	public void UpdateStatus(ConveyorBeltSwitch.State switchState)
-	{
-		switch (switchState)
+		/// <summary>
+		/// Updates the state of this conveyor based on the state of its assigned switch.
+		/// </summary>
+		[Server]
+		public void UpdateState()
 		{
-			case ConveyorBeltSwitch.State.Off:
-				SyncStatus( ConveyorStatus.Off);
-				break;
-			case ConveyorBeltSwitch.State.Forward:
-				SyncStatus( ConveyorStatus.Forward);
-				break;
-			case ConveyorBeltSwitch.State.Backward:
-				SyncStatus( ConveyorStatus.Backward);
-				break;
+			switch (AssignedSwitch.CurrentState)
+			{
+				case ConveyorBeltSwitch.SwitchState.Off:
+					SyncStatus(ConveyorStatus.Off);
+					break;
+				case ConveyorBeltSwitch.SwitchState.Forward:
+					SyncStatus(ConveyorStatus.Forward);
+					break;
+				case ConveyorBeltSwitch.SwitchState.Backward:
+					SyncStatus(ConveyorStatus.Backward);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
 		}
-	}
 
 	private void SyncStatus( ConveyorStatus newStatus)
 	{
@@ -141,28 +141,45 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, I
 		RefreshSprites();
 	}
 
-	private void RefreshSprites()
-	{
-		spriteHandler.ChangeSprite((int) CurrentStatus);
-		var variant = (int) CurrentDirection;
-		switch (variant)
+		private void RefreshSprites()
 		{
-			case 8:
-				variant = 4;
-				break;
-			case 9:
-				variant = 5;
-				break;
-			case 10:
-				variant = 6;
-				break;
-			case 11:
-				variant = 7;
-				break;
+			spriteHandler.ChangeSprite((int)CurrentStatus);
+			var variant = (int)CurrentDirection;
+			switch (variant)
+			{
+				case 8:
+					variant = 4;
+					break;
+				case 9:
+					variant = 5;
+					break;
+				case 10:
+					variant = 6;
+					break;
+				case 11:
+					variant = 7;
+					break;
+			}
+
+			spriteHandler.ChangeSpriteVariant(variant);
 		}
 
-		spriteHandler.ChangeSpriteVariant(variant);
-	}
+
+		private void GetPositionOffset()
+		{
+			switch (CurrentStatus)
+			{
+				case ConveyorStatus.Forward:
+					transportDirection = ConveyorDirections.directionsForward[CurrentDirection];
+					break;
+				case ConveyorStatus.Backward:
+					transportDirection = ConveyorDirections.directionsBackward[CurrentDirection];
+					break;
+				default:
+					transportDirection = Vector3Int.up;
+					break;
+			}
+		}
 
 	private void DetectItems()
 	{
@@ -196,91 +213,103 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, I
 		pushPull.QueuePush(transportDirection.To2Int(),3f, dontInsist: true);
 	}
 
-	public enum ConveyorStatus
-	{
-		Forward = 0,
-		Off = 1,
-		Backward = 2,
-	}
-
-	public enum ConveyorDirection
-	{
-		Up = 0,
-		Down = 1,
-		Left = 2,
-		Right = 3,
-		LeftDown = 4,
-		LeftUp = 5,
-		RightDown = 6,
-		RightUp = 7,
-		DownLeft = 8,
-		UpLeft = 9,
-		DownRight = 10,
-		UpRight = 11
-	}
-
-	/* Construction stuff */
-	public bool WillInteract(HandApply interaction, NetworkSide side)
-	{
-		if (!DefaultWillInteract.Default(interaction, side)) return false;
-
-		if (!Validations.IsTarget(gameObject, interaction)) return false;
-
-		return Validations.HasUsedItemTrait(interaction, CommonTraits.Instance.Crowbar) ||
-		       Validations.HasUsedItemTrait(interaction, CommonTraits.Instance.Wrench) ||
-		       Validations.HasUsedItemTrait(interaction,
-			       CommonTraits.Instance.Screwdriver); // deconstruct(crowbar) and turn direction(wrench)
-	}
-
-	public void ServerPerformInteraction(HandApply interaction)
-	{
-		if (Validations.HasUsedItemTrait(interaction, CommonTraits.Instance.Wrench))
+		public enum ConveyorStatus
 		{
-			//deconsruct
-			ToolUtils.ServerUseToolWithActionMessages(interaction, 2f,
-				"You start deconstructing the conveyor belt...",
-				$"{interaction.Performer.ExpensiveName()} starts deconstructing the conveyor belt...",
-				"You deconstruct the conveyor belt.",
-				$"{interaction.Performer.ExpensiveName()} deconstructs the conveyor belt.",
-				() =>
-				{
-					Spawn.ServerPrefab(CommonPrefabs.Instance.Metal, SpawnDestination.At(gameObject), 5);
-					Despawn.ServerSingle(gameObject);
-				});
+			Off = 0,
+			Forward = 1,
+			Backward = 2
 		}
 
-		else if (Validations.HasUsedItemTrait(interaction, CommonTraits.Instance.Screwdriver)) //change direction
+		public enum ConveyorDirection
 		{
-			int count = (int) CurrentDirection + 1;
+			Up = 0,
+			Down = 1,
+			Left = 2,
+			Right = 3,
+			LeftDown = 4,
+			LeftUp = 5,
+			RightDown = 6,
+			RightUp = 7,
+			DownLeft = 8,
+			UpLeft = 9,
+			DownRight = 10,
+			UpRight = 11
+		}
+
+		#region Interaction
+
+		public bool WillInteract(HandApply interaction, NetworkSide side)
+		{
+			if (!DefaultWillInteract.Default(interaction, side)) return false;
+
+			if (!Validations.IsTarget(gameObject, interaction)) return false;
+
+			// Deconstruct (crowbar) and change direction (screwdriver)
+			return Validations.HasUsedItemTrait(interaction, CommonTraits.Instance.Crowbar) ||
+					Validations.HasUsedItemTrait(interaction, CommonTraits.Instance.Screwdriver);
+		}
+
+		public void ServerPerformInteraction(HandApply interaction)
+		{
+			if (Validations.HasUsedItemTrait(interaction, CommonTraits.Instance.Wrench))
+			{
+				//deconsruct
+				ToolUtils.ServerUseToolWithActionMessages(interaction, 2f,
+					"You start deconstructing the conveyor belt...",
+					$"{interaction.Performer.ExpensiveName()} starts deconstructing the conveyor belt...",
+					"You deconstruct the conveyor belt.",
+					$"{interaction.Performer.ExpensiveName()} deconstructs the conveyor belt.",
+					DeconstructBelt);
+			}
+
+			else if (Validations.HasUsedItemTrait(interaction, CommonTraits.Instance.Screwdriver)) //change direction
+			{
+				ToolUtils.ServerUseToolWithActionMessages(interaction, 1f,
+					"You start redirecting the conveyor belt...",
+					$"{interaction.Performer.ExpensiveName()} starts redirecting the conveyor belt...",
+					"You redirect the conveyor belt.",
+					$"{interaction.Performer.ExpensiveName()} redirects the conveyor belt.",
+					ChangeDirection);
+			}
+		}
+
+		private void DeconstructBelt()
+		{
+			Spawn.ServerPrefab(CommonPrefabs.Instance.Metal, SpawnDestination.At(gameObject), 5);
+			Despawn.ServerSingle(gameObject);
+		}
+
+		private void ChangeDirection()
+		{
+			int count = (int)CurrentDirection + 1;
 
 			if (count > 11)
 			{
 				count = 0;
 			}
 
-			ToolUtils.ServerUseToolWithActionMessages(interaction, 1f,
-				"You start redirecting the conveyor belt...",
-				$"{interaction.Performer.ExpensiveName()} starts redirecting the conveyor belt...",
-				"You redirect the conveyor belt.",
-				$"{interaction.Performer.ExpensiveName()} redirects the conveyor belt.",
-				() =>
-				{
-					SyncDirection((ConveyorDirection)count, (ConveyorDirection)count);
-				});
+			// CurrentDirection = (ConveyorDirection)count;
+			//
+			// spriteHandler.ChangeSpriteVariant(count);
+
+			SyncDirection((ConveyorDirection)count, (ConveyorDirection)count);
 		}
-	}
 
-	//######################################## Multitool interaction ##################################
+		#endregion Interaction
 
-	[SerializeField]
-	private MultitoolConnectionType conType = MultitoolConnectionType.Conveyor;
-	public MultitoolConnectionType ConType  => conType;
+		#region Multitool Interaction
 
-	private bool multiMaster = true;
-	public bool MultiMaster => multiMaster;
+		[SerializeField]
+		private MultitoolConnectionType conType = MultitoolConnectionType.Conveyor;
+		public MultitoolConnectionType ConType => conType;
 
-	public void AddSlave(object SlaveObject)
-	{
+		private bool multiMaster = true;
+		public bool MultiMaster => multiMaster;
+
+		public void AddSlave(object SlaveObject)
+		{
+		}
+
+		#endregion Multitool Interaction
 	}
 }
-

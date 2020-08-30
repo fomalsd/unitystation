@@ -9,7 +9,7 @@ namespace Pipes
 	{
 		private Canister canister;
 
-		public void Start()
+		public override void Start()
 		{
 			pipeData.PipeAction = new MonoActions();
 			base.Start();
@@ -20,7 +20,7 @@ namespace Pipes
 			base.TickUpdate();
 			if (canister != null)
 			{
-				pipeData.mixAndVolume.EqualiseWithExternal(canister.container.GasMix);
+				canister.container.GasMix = pipeData.mixAndVolume.EqualiseWithExternal(canister.container.GasMix);
 			}
 			pipeData.mixAndVolume.EqualiseWithOutputs(pipeData.Outputs);
 		}
