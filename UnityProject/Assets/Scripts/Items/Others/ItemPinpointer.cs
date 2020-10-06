@@ -1,187 +1,216 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Mirror;
+using Items.Command;
 
-public class ItemPinpointer : NetworkBehaviour, IInteractable<HandActivate>
+namespace Items
 {
-	[SerializeField]
-	private GameObject arrowGameObject = default;
-
-	[Tooltip("How much time should lapse (seconds) between scans.")]
-	[SerializeField]
-	private float scanTime = 1;
-
-	[SerializeField]
-	public float maxMagnitude = 80;
-	[SerializeField]
-	public float mediumMagnitude = 40;
-	[SerializeField]
-	public float closeMagnitude = 10;
-
-	private SpriteHandler arrowSpriteHandler;
-
-	private GameObject objectToTrack;
-	private bool isOn = false;
-
-	private enum ArrowSprite
+	public class ItemPinpointer : NetworkBehaviour, IInteractable<HandActivate>
 	{
-		Null = 0,
-		Alert = 1,
-		AlertNull = 2,
-		AlertDirect = 3,
-		Direct = 4,
-		Close = 5,
-		Medium = 6,
-		Far = 7
-	}
+		[SerializeField]
+		private GameObject arrowGameObject = default;
 
-	private enum ArrowSpriteVariant
-	{
-		Down = 0,
-		Up = 1,
-		Right = 2,
-		Left = 3,
-		DownRight = 4,
-		DownLeft = 5,
-		UpRight = 6,
-		UpLeft = 7
-	}
+		[Tooltip("How much time should lapse (seconds) between scans.")]
+		[SerializeField]
+		private float scanTime = 1;
 
-	#region Lifecycle
+		[SerializeField]
+		public float maxMagnitude = 80;
+		[SerializeField]
+		public float mediumMagnitude = 40;
+		[SerializeField]
+		public float closeMagnitude = 10;
 
-	private void Awake()
-	{
-		arrowSpriteHandler = arrowGameObject.GetComponent<SpriteHandler>();
-	}
+		private SpriteHandler arrowSpriteHandler;
 
-	public override void OnStartServer()
-	{
-		var NukeDisks = FindObjectsOfType<NukeDiskScript>();
+		private GameObject objectToTrack;
+		private bool isOn = false;
 
-		foreach (var nukeDisk in NukeDisks)
-		{
-			if (nukeDisk == null) continue;
-
-			if (!nukeDisk.secondaryNukeDisk)
-			{
-				objectToTrack = nukeDisk.gameObject;
-				break;
-			}
-		}
-	}
-
-	private void OnDisable()
-	{
-		ToggleOff();
-	}
-
-	#endregion Lifecycle
-
-	private void UpdateMe()
-	{
-		Vector3 moveDirection = objectToTrack.AssumedWorldPosServer() - gameObject.AssumedWorldPosServer();
-		UpdateArrowSprite(moveDirection);
-	}
-
-	private void UpdateArrowSprite(Vector3 moveDirection)
-	{
-		if (moveDirection == Vector3.zero)
-		{
-			ChangeArrowSprite(ArrowSprite.Direct);
-			arrowSpriteHandler.ChangeSpriteVariant(0); // No variant for Direct.
-			return;
-		}
-
-		ArrowSprite newSprite = GetArrowFromMagnitude(moveDirection.magnitude);
-		ChangeArrowSprite(newSprite);
-
-		float angle = Mathf.Atan2(moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-		ArrowSpriteVariant newVariant = GetArrowVariantFromAngle(angle);
-		ChangeArrowSpriteVariant(newVariant);
-	}
-
-	private ArrowSprite GetArrowFromMagnitude(float magnitude)
-	{
-		if (magnitude >= mediumMagnitude) return ArrowSprite.Far;
-		if (magnitude >= closeMagnitude) return ArrowSprite.Medium;
-		if (magnitude <= closeMagnitude) return ArrowSprite.Close;
-
-		return default;
-	}
-
-	private ArrowSpriteVariant GetArrowVariantFromAngle(float angle)
+		private readonly Dictionary<int, ArrowSpriteVariant> directions = new Dictionary<int, ArrowSpriteVariant>()
 	{
 		// Cardinal arrow
-		if (angle <= -45 && angle >= -135f) return ArrowSpriteVariant.Down;
-		if (angle <= 135f && angle >= 45f) return ArrowSpriteVariant.Up;
-		if (angle <= 45f && angle >= -45f) return ArrowSpriteVariant.Right;
-		if (angle <= 225f && angle >= 135f) return ArrowSpriteVariant.Left;
+		{ -90, ArrowSpriteVariant.Down },
+		{ 0, ArrowSpriteVariant.Right },
+		{ 90, ArrowSpriteVariant.Up },
+		{ 180, ArrowSpriteVariant.Left },
+		{ -180, ArrowSpriteVariant.Left }, // Wraps around
 
 		// Diagonal arrow
-		if (angle <= 0f && angle >= -90f) return ArrowSpriteVariant.DownRight;
-		if (angle <= -90f && angle >= -180f) return ArrowSpriteVariant.DownLeft;
-		if (angle <= 90f && angle >= 0f) return ArrowSpriteVariant.UpRight;
-		if (angle <= 180f && angle >= 90f) return ArrowSpriteVariant.UpLeft;
+		{ -135, ArrowSpriteVariant.DownLeft },
+		{ -45, ArrowSpriteVariant.DownRight },
+		{ 45, ArrowSpriteVariant.UpRight },
+		{ 135, ArrowSpriteVariant.UpLeft }
+	};
 
-		return default;
-	}
-
-	private void ChangeArrowSprite(ArrowSprite sprite)
-	{
-		arrowSpriteHandler.ChangeSprite((int)sprite);
-	}
-
-	private void ChangeArrowSpriteVariant(ArrowSpriteVariant spriteVariant)
-	{
-		arrowSpriteHandler.ChangeSpriteVariant((int)spriteVariant);
-	}
-
-	#region Interaction
-
-	public void ServerPerformInteraction(HandActivate interaction)
-	{
-		Toggle();
-	}
-
-	private void Toggle()
-	{
-		isOn = !isOn;
-
-		if (isOn)
+		private enum ArrowSprite
 		{
-			ToggleOn();
+			Null = 0,
+			Alert = 1,
+			AlertNull = 2,
+			AlertDirect = 3,
+			Direct = 4,
+			Close = 5,
+			Medium = 6,
+			Far = 7
 		}
-		else
+
+		private enum ArrowSpriteVariant
+		{
+			Down = 0,
+			Up = 1,
+			Right = 2,
+			Left = 3,
+			DownRight = 4,
+			DownLeft = 5,
+			UpRight = 6,
+			UpLeft = 7
+		}
+
+		#region Lifecycle
+
+		private void Awake()
+		{
+			arrowSpriteHandler = arrowGameObject.GetComponent<SpriteHandler>();
+		}
+
+		public override void OnStartServer()
+		{
+			var NukeDisks = FindObjectsOfType<NukeDiskScript>();
+
+			foreach (var nukeDisk in NukeDisks)
+			{
+				if (nukeDisk == null) continue;
+
+				if (!nukeDisk.secondaryNukeDisk)
+				{
+					objectToTrack = nukeDisk.gameObject;
+					break;
+				}
+			}
+		}
+
+		private void OnDisable()
 		{
 			ToggleOff();
 		}
-	}
 
-	private void ToggleOn()
-	{
-		if (objectToTrack == null)
+		#endregion Lifecycle
+
+		private void UpdateMe()
 		{
-			objectToTrack = FindObjectOfType<NukeDiskScript>().gameObject;
+			if (objectToTrack != null)
+			{
+				Vector3 moveDirection = objectToTrack.AssumedWorldPosServer() - gameObject.AssumedWorldPosServer();
+				UpdateArrowSprite(moveDirection);
+			}
+			else
+			{
+				SetArrowSpriteToNull();
+			}
 		}
 
-		if (objectToTrack == null)
+		private void UpdateArrowSprite(Vector3 moveDirection)
+		{
+			if (moveDirection == Vector3.zero)
+			{
+				ChangeArrowSprite(ArrowSprite.Direct);
+				arrowSpriteHandler.ChangeSpriteVariant(0); // No variant for Direct.
+				return;
+			}
+
+			ArrowSprite newSprite = GetArrowFromMagnitude(moveDirection.magnitude);
+			ChangeArrowSprite(newSprite);
+
+			float angle = Mathf.Atan2(moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
+			ArrowSpriteVariant newVariant = GetArrowVariantFromAngle(angle);
+			ChangeArrowSpriteVariant(newVariant);
+		}
+
+		private ArrowSprite GetArrowFromMagnitude(float magnitude)
+		{
+			if (magnitude >= mediumMagnitude) return ArrowSprite.Far;
+			if (magnitude >= closeMagnitude) return ArrowSprite.Medium;
+			if (magnitude <= closeMagnitude) return ArrowSprite.Close;
+
+			return default;
+		}
+
+		private ArrowSpriteVariant GetArrowVariantFromAngle(float angle)
+		{
+			float bestAngle = 360;
+			ArrowSpriteVariant bestVariant = default;
+
+			foreach (var kvp in directions)
+			{
+				var testValue = Math.Abs(kvp.Key - angle);
+				if (testValue < bestAngle)
+				{
+					bestAngle = testValue;
+					bestVariant = kvp.Value;
+				}
+			}
+
+			return bestVariant;
+		}
+
+		private void ChangeArrowSprite(ArrowSprite sprite)
+		{
+			arrowSpriteHandler.ChangeSprite((int)sprite);
+		}
+
+		private void ChangeArrowSpriteVariant(ArrowSpriteVariant spriteVariant)
+		{
+			arrowSpriteHandler.ChangeSpriteVariant((int)spriteVariant);
+		}
+
+		private void SetArrowSpriteToNull()
 		{
 			ChangeArrowSprite(ArrowSprite.AlertNull);
 			arrowSpriteHandler.ChangeSpriteVariant(0); // No variant for AlertNull.
-			arrowSpriteHandler.PushTexture();
 		}
 
-		UpdateMe();
-		UpdateManager.Add(UpdateMe, scanTime);
-	}
+		#region Interaction
 
-	private void ToggleOff()
-	{
-		arrowSpriteHandler.PushClear();
-		UpdateManager.Remove(CallbackType.UPDATE, UpdateMe);
-	}
+		public void ServerPerformInteraction(HandActivate interaction)
+		{
+			Toggle();
+		}
 
-	#endregion Interaction
+		private void Toggle()
+		{
+			isOn = !isOn;
+
+			if (isOn)
+			{
+				ToggleOn();
+			}
+			else
+			{
+				ToggleOff();
+			}
+		}
+
+		private void ToggleOn()
+		{
+			SetArrowSpriteToNull();
+			arrowSpriteHandler.PushTexture();
+
+			if (objectToTrack == null)
+			{
+				objectToTrack = FindObjectOfType<NukeDiskScript>().gameObject;
+			}
+
+			UpdateManager.Add(UpdateMe, scanTime);
+		}
+
+		private void ToggleOff()
+		{
+			arrowSpriteHandler.PushClear();
+			UpdateManager.Remove(CallbackType.PERIODIC_UPDATE, UpdateMe);
+		}
+
+		#endregion Interaction
+	}
 }

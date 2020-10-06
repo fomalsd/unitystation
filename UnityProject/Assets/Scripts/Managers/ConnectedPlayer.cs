@@ -55,7 +55,14 @@ public class ConnectedPlayer
 
 	public string Name
 	{
-		get => name;
+		get
+		{
+			if (string.IsNullOrEmpty(name))
+			{
+				return gameObject.name;
+			}
+			return name;
+		}
 		set
 		{
 			TryChangeName(value);
@@ -97,7 +104,7 @@ public class ConnectedPlayer
 			return;
 		}
 
-		string uniqueName = GetUniqueName(playerName);
+		string uniqueName = GetUniqueName(playerName, UserId);
 		name = uniqueName;
 	}
 
@@ -107,7 +114,7 @@ public class ConnectedPlayer
 	/// <param name="name"></param>
 	/// <param name="sameNames"></param>
 	/// <returns></returns>
-	private static string GetUniqueName(string name, int sameNames = 0)
+	private static string GetUniqueName(string name, string _UserId ,int sameNames = 0)
 	{
 		while (true)
 		{
@@ -118,7 +125,7 @@ public class ConnectedPlayer
 				Logger.LogTrace($"TRYING: {proposedName}", Category.Connections);
 			}
 
-			if (!PlayerList.Instance.ContainsName(proposedName))
+			if (!PlayerList.Instance.ContainsName(proposedName,_UserId))
 			{
 				return proposedName;
 			}

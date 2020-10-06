@@ -18,6 +18,23 @@ PrefabInstance:
       propertyPath: MagSize
       value: 4
       objectReference: {fileID: 0}
+    - target: {fileID: 6823102837704580389, guid: 8976db5cf8f59bc4cb85f61e8737b468,
+        type: 3}
+      propertyPath: genericInternalMag
+      value: 
+      objectReference: {fileID: 7867408350706620705, guid: 47493b21cc48e4b4baf28fadcea2f2fe,
+        type: 3}
+    - target: {fileID: 6823102837704580389, guid: 8976db5cf8f59bc4cb85f61e8737b468,
+        type: 3}
+      propertyPath: ammoPrefab
+      value: 
+      objectReference: {fileID: 7867408350706620705, guid: 47493b21cc48e4b4baf28fadcea2f2fe,
+        type: 3}
+    - target: {fileID: 6823102837704580389, guid: 8976db5cf8f59bc4cb85f61e8737b468,
+        type: 3}
+      propertyPath: allowMagazineRemoval
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7581072607275496204, guid: 8976db5cf8f59bc4cb85f61e8737b468,
         type: 3}
       propertyPath: initialDescription
@@ -31,8 +48,14 @@ PrefabInstance:
     - target: {fileID: 7581072607275496204, guid: 8976db5cf8f59bc4cb85f61e8737b468,
         type: 3}
       propertyPath: initialSize
-      value: 4
+      value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 7581072607275496204, guid: 8976db5cf8f59bc4cb85f61e8737b468,
+        type: 3}
+      propertyPath: initialTraits.Array.data[1]
+      value: 
+      objectReference: {fileID: 11400000, guid: 5eafba0d7388d428c8e08ed1b5d5d260,
+        type: 2}
     - target: {fileID: 7865834125967585074, guid: 8976db5cf8f59bc4cb85f61e8737b468,
         type: 3}
       propertyPath: m_Sprite

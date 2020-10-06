@@ -135,9 +135,32 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1932141341405303641, guid: 6f371050bff8b32438f91c7c680900bb,
         type: 3}
+      propertyPath: SubCatalogue.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1932141341405303641, guid: 6f371050bff8b32438f91c7c680900bb,
+        type: 3}
       propertyPath: PresentSpriteSet
       value: 
       objectReference: {fileID: 11400000, guid: 4411773cea9c5fc4d985d0debd90c5dd,
+        type: 2}
+    - target: {fileID: 1932141341405303641, guid: 6f371050bff8b32438f91c7c680900bb,
+        type: 3}
+      propertyPath: SubCatalogue.Array.data[0]
+      value: 
+      objectReference: {fileID: 11400000, guid: 4411773cea9c5fc4d985d0debd90c5dd,
+        type: 2}
+    - target: {fileID: 1932141341405303641, guid: 6f371050bff8b32438f91c7c680900bb,
+        type: 3}
+      propertyPath: SubCatalogue.Array.data[1]
+      value: 
+      objectReference: {fileID: 11400000, guid: 1399c789d7acf604b8a2ccd59c93d9a6,
+        type: 2}
+    - target: {fileID: 1932141341405303641, guid: 6f371050bff8b32438f91c7c680900bb,
+        type: 3}
+      propertyPath: SubCatalogue.Array.data[2]
+      value: 
+      objectReference: {fileID: 11400000, guid: da461c3fe0abe584fbdc9629b76fde87,
         type: 2}
     - target: {fileID: 2731276346802104052, guid: 6f371050bff8b32438f91c7c680900bb,
         type: 3}
@@ -265,17 +288,12 @@ PrefabInstance:
     - target: {fileID: 5334267868750357690, guid: 6f371050bff8b32438f91c7c680900bb,
         type: 3}
       propertyPath: Size
-      value: 8
-      objectReference: {fileID: 0}
-    - target: {fileID: 5334267868750357690, guid: 6f371050bff8b32438f91c7c680900bb,
-        type: 3}
-      propertyPath: Intensity
-      value: 1
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 5334267868750357690, guid: 6f371050bff8b32438f91c7c680900bb,
         type: 3}
       propertyPath: Colour.a
-      value: 0.5019608
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5334267868750357690, guid: 6f371050bff8b32438f91c7c680900bb,
         type: 3}
@@ -300,7 +318,7 @@ PrefabInstance:
     - target: {fileID: 5344101728563766022, guid: 6f371050bff8b32438f91c7c680900bb,
         type: 3}
       propertyPath: Color.a
-      value: 0.5019608
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5577623456038050690, guid: 6f371050bff8b32438f91c7c680900bb,
         type: 3}

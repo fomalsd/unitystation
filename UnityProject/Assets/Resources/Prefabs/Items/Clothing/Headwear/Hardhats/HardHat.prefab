@@ -28,7 +28,7 @@ Transform:
   m_GameObject: {fileID: 4425414661908067713}
   m_LocalRotation: {x: 0.00000031610085, y: 0.00000021073383, z: -0.70710677, w: 0.7071069}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 8, y: 8, z: 8}
+  m_LocalScale: {x: 6, y: 6, z: 6}
   m_Children: []
   m_Father: {fileID: 7632320555952889534}
   m_RootOrder: 1
@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61930e16e81db5c43a4ecc22422a0953, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Color: {r: 0.99215686, g: 0.96862745, b: 0.88235295, a: 0.43137255}
+  Color: {r: 1, g: 1, b: 1, a: 1}
   Sprite: {fileID: 21300000, guid: 7d4ab37af9168d243a3eead2ef5b5758, type: 3}
   SortingOrder: 0
   Material: {fileID: 2100000, guid: b7e7f24fa2e49cb48818dace424b5868, type: 2}
@@ -113,9 +113,6 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0.1
   spriteHandler: {fileID: 4377197623706982477}
-  toggleSprites:
-  - {fileID: 21300000, guid: 097d1d016970659418f5f1e5e70c415e, type: 3}
-  - {fileID: 21300000, guid: a97041fcb2f76c3489632b73d091d142, type: 3}
 --- !u!114 &3714036432172209818
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -132,16 +129,34 @@ MonoBehaviour:
   syncInterval: 0.1
   LightEmission: {fileID: 0}
   objectLightEmission: {fileID: 4425414661908067713}
-  Intensity: 0.85
-  Colour: {r: 0.99215686, g: 0.96862745, b: 0.88235295, a: 0.43137255}
+  Intensity: 1
+  Colour: {r: 1, g: 1, b: 1, a: 1}
   EnumSprite: 0
-  Size: 8
+  Size: 6
   IsOn: 0
   PlayerLightData:
     Intensity: 0
     Colour: {r: 0, g: 0, b: 0, a: 0}
     EnumSprite: 0
     Size: 12
+--- !u!114 &7447824303015230268
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7636118406116123594}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1360d2b65a03cdf449035cd3c4cd0153, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  actionData: {fileID: 11400000, guid: 9cf6b1b6994732d4cb5f023e0cefaf19, type: 2}
+  allowedSlots: 4
+  useSpriteHandler: 1
+  spriteHandler: {fileID: 4377197623706982477}
 --- !u!1001 &8626702741117152277
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -299,9 +314,26 @@ PrefabInstance:
         type: 2}
     - target: {fileID: 5406248525527790680, guid: a7a048f6c330048e9a2358fb6f71d385,
         type: 3}
+      propertyPath: SubCatalogue.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5406248525527790680, guid: a7a048f6c330048e9a2358fb6f71d385,
+        type: 3}
       propertyPath: PresentSpriteSet
       value: 
       objectReference: {fileID: 11400000, guid: fb162db8c06c8d742ab14e593ac452ee,
+        type: 2}
+    - target: {fileID: 5406248525527790680, guid: a7a048f6c330048e9a2358fb6f71d385,
+        type: 3}
+      propertyPath: SubCatalogue.Array.data[0]
+      value: 
+      objectReference: {fileID: 11400000, guid: fb162db8c06c8d742ab14e593ac452ee,
+        type: 2}
+    - target: {fileID: 5406248525527790680, guid: a7a048f6c330048e9a2358fb6f71d385,
+        type: 3}
+      propertyPath: SubCatalogue.Array.data[1]
+      value: 
+      objectReference: {fileID: 11400000, guid: a3f3213151fec5b46a8eef9de3f8e4b3,
         type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a7a048f6c330048e9a2358fb6f71d385, type: 3}

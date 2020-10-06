@@ -15,7 +15,7 @@ PrefabInstance:
     - target: {fileID: 3242550791702936155, guid: c0e96760c016b6140ba8c3979e9213f7,
         type: 3}
       propertyPath: Gases.Array.data[0]
-      value: 60932.95
+      value: 1846.242
       objectReference: {fileID: 0}
     - target: {fileID: 3242550791702936155, guid: c0e96760c016b6140ba8c3979e9213f7,
         type: 3}
@@ -26,11 +26,6 @@ PrefabInstance:
         type: 3}
       propertyPath: gasMix.Pressure
       value: 148516.98
-      objectReference: {fileID: 0}
-    - target: {fileID: 3242550791702936155, guid: c0e96760c016b6140ba8c3979e9213f7,
-        type: 3}
-      propertyPath: MaximumMoles
-      value: 60932.95
       objectReference: {fileID: 0}
     - target: {fileID: 3242550791702936155, guid: c0e96760c016b6140ba8c3979e9213f7,
         type: 3}
@@ -167,6 +162,18 @@ PrefabInstance:
     - target: {fileID: 7811982109262590682, guid: c0e96760c016b6140ba8c3979e9213f7,
         type: 3}
       propertyPath: PresentSpriteSet
+      value: 
+      objectReference: {fileID: 11400000, guid: e38b4751f8540f24cbaa8784947a0ae4,
+        type: 2}
+    - target: {fileID: 7811982109262590682, guid: c0e96760c016b6140ba8c3979e9213f7,
+        type: 3}
+      propertyPath: SubCatalogue.Array.data[1]
+      value: 
+      objectReference: {fileID: 11400000, guid: cff7d0ed9b1ca7049b210042702b423a,
+        type: 2}
+    - target: {fileID: 7811982109262590682, guid: c0e96760c016b6140ba8c3979e9213f7,
+        type: 3}
+      propertyPath: SubCatalogue.Array.data[0]
       value: 
       objectReference: {fileID: 11400000, guid: e38b4751f8540f24cbaa8784947a0ae4,
         type: 2}

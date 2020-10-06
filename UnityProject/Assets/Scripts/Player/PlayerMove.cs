@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Mirror;
 using UnityEngine.Events;
-using UnityEngine.Serialization;
+using Objects;
 
 /// <summary>
 ///     ** Now all movement input keys are sent to PlayerSync.Client
@@ -45,6 +45,11 @@ public class PlayerMove : NetworkBehaviour, IRightClickable, IServerSpawn, IActi
 	/// Whether the character is restrained with handcuffs (or similar)
 	/// </summary>
 	public bool IsCuffed => cuffed;
+
+	/// <summary>
+	/// Whether the character is trapped in a closet (or similar)
+	/// </summary>
+	public bool IsTrapped = false;
 
 	/// <summary>
 	/// Invoked on server side when the cuffed state is changed
@@ -119,7 +124,7 @@ public class PlayerMove : NetworkBehaviour, IRightClickable, IServerSpawn, IActi
 		MoveAction.MoveUp, MoveAction.MoveLeft, MoveAction.MoveDown, MoveAction.MoveRight
 	};
 
-	private Directional playerDirectional;
+	public Directional PlayerDirectional;
 
 	[HideInInspector] public PlayerNetworkActions pna;
 
@@ -143,7 +148,7 @@ public class PlayerMove : NetworkBehaviour, IRightClickable, IServerSpawn, IActi
 
 	private void Start()
 	{
-		playerDirectional = gameObject.GetComponent<Directional>();
+		PlayerDirectional = gameObject.GetComponent<Directional>();
 
 		registerPlayer = GetComponent<RegisterPlayer>();
 		pna = gameObject.GetComponent<PlayerNetworkActions>();
@@ -312,16 +317,16 @@ public class PlayerMove : NetworkBehaviour, IRightClickable, IServerSpawn, IActi
 		var directionalObject = toObject.GetComponent<Directional>();
 		if (directionalObject != null)
 		{
-			playerDirectional.FaceDirection(directionalObject.CurrentDirection);
+			PlayerDirectional.FaceDirection(directionalObject.CurrentDirection);
 		}
 		else
 		{
-			playerDirectional.FaceDirection(playerDirectional.CurrentDirection);
+			PlayerDirectional.FaceDirection(PlayerDirectional.CurrentDirection);
 		}
 
 		//force sync direction to current direction (If it is a real player and not a NPC)
 		if (PlayerScript.connectionToClient != null)
-			playerDirectional.TargetForceSyncDirection(PlayerScript.connectionToClient);
+			PlayerDirectional.TargetForceSyncDirection(PlayerScript.connectionToClient);
 	}
 
 	/// <summary>
@@ -372,11 +377,11 @@ public class PlayerMove : NetworkBehaviour, IRightClickable, IServerSpawn, IActi
 	//invoked when buckledTo changes direction, so we can update our direction
 	private void OnBuckledObjectDirectionChange(Orientation newDir)
 	{
-		if (playerDirectional == null)
+		if (PlayerDirectional == null)
 		{
-			playerDirectional = gameObject.GetComponent<Directional>();
+			PlayerDirectional = gameObject.GetComponent<Directional>();
 		}
-		playerDirectional.FaceDirection(newDir);
+		PlayerDirectional.FaceDirection(newDir);
 	}
 
 	//syncvar hook invoked client side when the buckledTo changes

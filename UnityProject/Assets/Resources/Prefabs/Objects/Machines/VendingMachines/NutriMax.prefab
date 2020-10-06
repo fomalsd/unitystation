@@ -28,6 +28,12 @@ PrefabInstance:
       propertyPath: initialName
       value: Nutrimax
       objectReference: {fileID: 0}
+    - target: {fileID: 4347831001461171392, guid: 2f2954acc32d9d3468c620e34a625966,
+        type: 3}
+      propertyPath: PresentSpriteSet
+      value: 
+      objectReference: {fileID: 11400000, guid: 187c20037d48f4c469aeed978c0b8afa,
+        type: 2}
     - target: {fileID: 4813939428139522015, guid: 2f2954acc32d9d3468c620e34a625966,
         type: 3}
       propertyPath: InitialVendorContent.Array.size
@@ -132,7 +138,7 @@ PrefabInstance:
         type: 3}
       propertyPath: InitialVendorContent.Array.data[5].Item
       value: 
-      objectReference: {fileID: 3743805628540699155, guid: b3b79b27cd47b4b45a1f6921e0bce05d,
+      objectReference: {fileID: 3544980290922763715, guid: c9970b39137b47b4e8e1f06443af3ca7,
         type: 3}
     - target: {fileID: 4813939428139522015, guid: 2f2954acc32d9d3468c620e34a625966,
         type: 3}
@@ -202,7 +208,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300004, guid: 8ee69c08079eb0c47be95a3f4b197bd4,
+      objectReference: {fileID: 21300000, guid: 8ee69c08079eb0c47be95a3f4b197bd4,
         type: 3}
     - target: {fileID: 9081061823247388186, guid: 2f2954acc32d9d3468c620e34a625966,
         type: 3}
