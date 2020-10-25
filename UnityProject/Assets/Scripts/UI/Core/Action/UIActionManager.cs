@@ -31,12 +31,18 @@ public class UIActionManager : MonoBehaviour
 		}
 	}
 
+	/// <summary>
+	/// Returns true if an action that is aimable is active.
+	/// </summary>
+	public bool IsAiming => HasActiveAction && ActiveAction.ActionData.IsAimable;
 
 	public UIAction UIAction;
 	public List<UIAction> PooledUIAction = new List<UIAction>();
 
 	public Dictionary<IActionGUI, UIAction> DicIActionGUI = new Dictionary<IActionGUI, UIAction>();
 
+	public UIAction ActiveAction { get; set; }
+	public bool HasActiveAction => ActiveAction != null;
 
 	/// <summary>
 	/// Set the action button visibility, locally (clientside)
@@ -96,12 +102,15 @@ public class UIActionManager : MonoBehaviour
 	/// <summary>
 	/// Sets the sprite of the action button.
 	/// </summary>
-	public static void SetSpriteSO(IActionGUI iActionGUI, SpriteDataSO sprite, bool networked = true)
+	public static void SetSpriteSO(IActionGUI iActionGUI, SpriteDataSO sprite, bool networked = true, List<Color> palette = null)
 	{
+		Debug.Assert(!(sprite.IsPalette && palette == null), "Paletted sprites should never be set without a palette");
+
 		if (Instance.DicIActionGUI.ContainsKey(iActionGUI))
 		{
 			var _UIAction = Instance.DicIActionGUI[iActionGUI];
-			_UIAction.IconFront.SetSpriteSO(sprite, Network: networked);
+			_UIAction.IconFront.SetSpriteSO(sprite, Network: networked);		
+			_UIAction.IconFront.SetPaletteOfCurrentSprite(palette);
 		}
 		else
 		{
@@ -135,7 +144,6 @@ public class UIActionManager : MonoBehaviour
 		}
 	}
 
-
 	public static void SetBackground(IActionGUI iActionGUI, Sprite sprite)
 	{
 		if (Instance.DicIActionGUI.ContainsKey(iActionGUI))
@@ -143,9 +151,30 @@ public class UIActionManager : MonoBehaviour
 			var _UIAction = Instance.DicIActionGUI[iActionGUI];
 			_UIAction.IconBackground.SetSprite(sprite);
 		}
-		else {
-			Logger.Log("iActionGUI Not present", Category.UI);
+		else
+		{
+			Logger.Log("iActionGUI not present!", Category.UI);
 		}
+	}
+
+	public static void SetCooldownLocal(IActionGUI iActionGUI, float cooldown)
+	{
+		if (Instance.DicIActionGUI.ContainsKey(iActionGUI))
+		{
+			var _UIAction = Instance.DicIActionGUI[iActionGUI];
+
+			_UIAction.CooldownOpacity.localScale = Vector3Int.one; // Enable opacity.
+			_UIAction.CooldownOpacity.LeanScaleY(0f, cooldown);
+		}
+		else
+		{
+			Logger.Log("iActionGUI not present!", Category.UI);
+		}
+	}
+
+	public static void SetCooldown(IActionGUI iActionGUI, float cooldown, GameObject recipient)
+	{
+		SetActionUIMessage.SetAction(recipient, iActionGUI, cooldown);
 	}
 
 	public static void Show(IActionGUI iActionGUI)
@@ -179,6 +208,14 @@ public class UIActionManager : MonoBehaviour
 		}
 	}
 
+	#region Events
+
+	public void AimClicked(Vector3 clickPosition)
+	{
+		if (HasActiveAction == false) return;
+		ActiveAction.RunActionWithClick(clickPosition);
+	}
+
 	public void OnRoundEnd()
 	{
 		foreach (var _Action in DicIActionGUI) {
@@ -202,18 +239,15 @@ public class UIActionManager : MonoBehaviour
 		CheckEvent(EVENT.LoggedOut);
 	}
 
-
 	public void RoundStarted()
 	{
 		CheckEvent(EVENT.RoundStarted);
 	}
 
-
 	public void GhostSpawned()
 	{
 		CheckEvent(EVENT.GhostSpawned);
 	}
-
 
 	public void PlayerRejoined()
 	{
@@ -240,9 +274,6 @@ public class UIActionManager : MonoBehaviour
 		}
 	}
 
-
-
-
 	private void OnEnable()
 	{
 		EventManager.AddHandler(EVENT.RoundEnded, OnRoundEnd);
@@ -268,4 +299,5 @@ public class UIActionManager : MonoBehaviour
 		EventManager.RemoveHandler(EVENT.PlayerRejoined, PlayerRejoined);
 	}
 
+	#endregion Events
 }

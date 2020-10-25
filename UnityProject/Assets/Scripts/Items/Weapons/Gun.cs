@@ -124,7 +124,6 @@ namespace Weapons
 		/// </summary>
 		public float MaxRecoilVariance;
 
-		//TODO: make this dependent on the mag used/projectile fired
 		/// <summary>
 		/// The traveling speed for this weapons projectile
 		/// </summary>
@@ -186,7 +185,7 @@ namespace Weapons
 			UpdateManager.Remove(CallbackType.UPDATE, UpdateMe);
 		}
 
-		public void OnSpawnServer(SpawnInfo info)
+		public virtual void OnSpawnServer(SpawnInfo info)
 		{
 			Init();
 		}
@@ -287,10 +286,7 @@ namespace Weapons
 				}
 				else if (interaction.MouseButtonState == MouseButtonState.PRESS)
 				{
-					if (currentBurstCount != 0)
-					{
-						currentBurstCount = 0;
-					}
+					currentBurstCount = 0;
 					return true;
 				}
 				else
@@ -349,7 +345,7 @@ namespace Weapons
 
 
 
-		public bool Interact(HandActivate interaction)
+		public virtual bool Interact(HandActivate interaction)
 		{
 			//try ejecting the mag if external
 			if (CurrentMagazine != null && allowMagazineRemoval && !MagInternal)
@@ -380,7 +376,7 @@ namespace Weapons
 			return false;
 		}
 
-		public string Examine(Vector3 pos)
+		public virtual string Examine(Vector3 pos)
 		{
 			return WeaponType + " - Fires " + ammoType + " ammunition (" + (CurrentMagazine != null ? (CurrentMagazine.ServerAmmoRemains.ToString() + " rounds loaded in magazine") : "It's empty!") + ")";
 		}
@@ -439,6 +435,11 @@ namespace Weapons
 			}
 			if (queuedLoadMagNetID != NetId.Invalid && queuedShots.Count == 0)
 			{
+				if (CurrentMagazine == null)
+				{
+					Logger.LogWarning($"Why is {nameof(CurrentMagazine)} null for {this}?");
+				}
+
 				//done processing shot queue, perform the reload, causing all clients and server to update their version of this Weapon
 				//due to the syncvar hook
 				if (MagInternal)
@@ -604,7 +605,6 @@ namespace Weapons
 
 				return;
 			}
-			//TODO: If this is not our gun, simply display the shot, don't run any other logic
 			if (shooter == PlayerManager.LocalPlayer)
 			{
 				//this is our gun so we need to update our predictions
@@ -623,34 +623,31 @@ namespace Weapons
 					};
 				}
 				Camera2DFollow.followControl.Recoil(-finalDirection, CameraRecoilConfig);
+
+				if (CurrentMagazine == null)
+				{
+					Logger.LogWarning($"Why is {nameof(CurrentMagazine)} null for {this} on this client?");
+				}
+				else
+				{
+					//call ExpendAmmo outside of previous check, or it won't run serverside and state will desync.
+					CurrentMagazine.ExpendAmmo();
+				}
 			}
 
-			if (CurrentMagazine == null)
-			{
-				Logger.Log("Why is CurrentMagazine null on this client?");
-			}
-			else
-			{
-				//call ExpendAmmo outside of previous check, or it won't run serverside and state will desync.
-				CurrentMagazine.ExpendAmmo();
-			}
-
-			//display the effects of the shot
-
-			//get the bullet prefab being shot
-
+			MagazineBehaviour magazine = ammoPrefab.GetComponent<MagazineBehaviour>();
 			if (isSuicideShot)
 			{
-				GameObject bullet = Spawn.ClientPrefab(CurrentMagazine.Projectile.name,
+				GameObject bullet = Spawn.ClientPrefab(magazine.Projectile.name,
 					shooter.transform.position, parent: shooter.transform.parent).GameObject;
 				var b = bullet.GetComponent<Projectile>();
 				b.Suicide(shooter, this, damageZone);
 			}
 			else
 			{
-				for (int n = 0; n < CurrentMagazine.ProjectilesFired; n++)
+				for (int n = 0; n < magazine.ProjectilesFired; n++)
 				{
-					GameObject Abullet = Spawn.ClientPrefab(CurrentMagazine.Projectile.name,
+					GameObject Abullet = Spawn.ClientPrefab(magazine.Projectile.name,
 						shooter.transform.position, parent: shooter.transform.parent).GameObject;
 					var A = Abullet.GetComponent<Projectile>();
 					var finalDirectionOverride = CalcDirection(finalDirection, n);

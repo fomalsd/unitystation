@@ -239,7 +239,7 @@ public partial class PlayerSync
 		for (int i = 0; i < registerTiles.Count; i++)
 		{
 			var pushable = registerTiles[i].CustomTransform;
-			if (pushable && pushable.gameObject != gameObject && pushable.IsSolidClient)
+			if (pushable && pushable.gameObject != gameObject && pushable.CanPushClient(worldTile, direction))
 			{
 				//					Logger.LogTraceFormat( "Predictive pushing {0} from {1} to {2}", Category.PushPull, pushPulls[i].gameObject, worldTile, (Vector2)(Vector3)worldTile+(Vector2)direction );
 				if (pushable.TryPredictivePush(worldTile, direction))
@@ -366,7 +366,7 @@ public partial class PlayerSync
 				SpeedClient = playerMove.CrawlSpeed;
 			}
 		}
-			
+
 		var nextState = NextState(state, action, isReplay);
 
 		nextState.Speed = SpeedClient;

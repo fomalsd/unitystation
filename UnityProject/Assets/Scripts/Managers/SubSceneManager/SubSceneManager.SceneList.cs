@@ -212,7 +212,7 @@ public partial class SubSceneManager
 		}
 	}
 
-	#region SyndicateScene
+	#region GameMode Unique Scenes
 
 	public IEnumerator LoadSyndicate()
 	{
@@ -231,7 +231,7 @@ public partial class SubSceneManager
 				SceneName = syndicateData.SyndicateSceneName,
 				SceneType = SceneType.AdditionalScenes
 			});
-
+			PokeClientSubScene.SendToAll( syndicateData.SyndicateSceneName);
 			yield break;
 		}
 
@@ -244,8 +244,27 @@ public partial class SubSceneManager
 			SceneName = pickedMap,
 			SceneType = SceneType.AdditionalScenes
 		});
-
+		PokeClientSubScene.SendToAll( pickedMap);
 		SyndicateLoaded = true;
+	}
+
+	public IEnumerator LoadWizard()
+	{
+		if (WizardLoaded) yield break;
+
+		string pickedScene = additionalSceneList.WizardScenes.PickRandom();
+
+		yield return StartCoroutine(LoadSubScene(pickedScene));
+
+		loadedScenesList.Add(new SceneInfo
+		{
+			SceneName = pickedScene,
+			SceneType = SceneType.AdditionalScenes
+		});
+		
+		PokeClientSubScene.SendToAll(pickedScene);
+
+		WizardLoaded = true;
 	}
 
 	#endregion
