@@ -1,147 +1,116 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Mirror;
 using ScriptableObjects;
+using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace Construction.Conveyors
 {
-	[SelectionBase]
-	[ExecuteInEditMode]
-	public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, ISetMultitoolMaster
+[SelectionBase]
+[ExecuteInEditMode]
+public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, ISetMultitoolMaster
+{
+	[SerializeField] private SpriteHandler spriteHandler = null;
+
+	private RegisterTile registerTile;
+	private Vector3Int transportDirection;
+
+	public ConveyorBeltSwitch AssignedSwitch { get; private set; }
+
+	private Matrix Matrix => registerTile.Matrix;
+
+	[Tooltip("Set this conveyor belt's initial direction.")]
+	[SerializeField]
+	private ConveyorDirection CurrentDirection = default;
+
+	[Tooltip("Set this conveyor belt's initial status.")]
+	[SerializeField]
+	private ConveyorStatus CurrentStatus = default;
+
+	Vector2Int[] searchDirs =
 	{
-		private readonly Vector2Int[] searchDirs =
+		new Vector2Int(-1, 0), new Vector2Int(0, 1),
+		new Vector2Int(1, 0), new Vector2Int(0, -1)
+	};
+
+	#region Lifecycle
+
+	private void OnEnable()
+	{
+		OnStart();
+	}
+
+	// Only runs in editor - useful for updating the sprite direction
+	// when the initial direction is altered via inspector.
+	private void OnValidate()
+	{
+		RefreshSprites();
+	}
+
+	private void OnStart()
+	{
+		registerTile = GetComponent<RegisterTile>();
+		RefreshSprites();
+	}
+
+	public override void OnStartServer()
+	{
+		SyncStatus( ConveyorStatus.Off);
+	}
+
+	public override void OnStartClient()
+	{
+		RefreshSprites();
+	}
+
+	#endregion Lifecycle
+
+	#region Belt Operation
+
+
+	public void SyncDirection(ConveyorDirection _, ConveyorDirection newValue)
+	{
+		CurrentDirection = newValue;
+		GetPositionOffset();
+		RefreshSprites();
+	}
+
+	#endregion Belt Operation
+
+	[Server]
+	public void SetBeltFromBuildMenu(ConveyorDirection direction)
+	{
+		SyncDirection(direction, direction);
+		//Discover any neighbours:
+		for (int i = 0; i < searchDirs.Length; i++)
 		{
-			new Vector2Int(-1, 0), new Vector2Int(0, 1),
-			new Vector2Int(1, 0), new Vector2Int(0, -1)
-		};
+			var conveyorBelt =
+				registerTile.Matrix.GetFirst<ConveyorBelt>(registerTile.LocalPosition + searchDirs[i].To3Int(), true);
 
-		[Tooltip("Set this conveyor belt's initial direction.")]
-		[SerializeField]
-		private ConveyorDirection CurrentDirection = default;
-
-		[Tooltip("Set this conveyor belt's initial status.")]
-		[SerializeField]
-		private ConveyorStatus CurrentStatus = default;
-
-		[SerializeField] private SpriteHandler spriteHandler = null;
-		private RegisterTile registerTile;
-
-		private Vector3 position;
-		private Matrix Matrix => registerTile.Matrix;
-
-		public ConveyorBeltSwitch AssignedSwitch { get; private set; }
-
-		private Queue<PlayerSync> playerCache = new Queue<PlayerSync>();
-		private Queue<CustomNetTransform> cntCache = new Queue<CustomNetTransform>();
-
-		#region Lifecycle
-
-		private void Awake()
-		{
-			registerTile = GetComponent<RegisterTile>();
-		}
-
-		private void OnValidate()
-		{
-			if (Application.isPlaying) return;
-			RefreshSprites();
-		}
-
-		public override void OnStartServer()
-		{
-			base.OnStartServer();
-			RefreshSprites();
-		}
-
-		#endregion Lifecycle
-
-		#region Belt Operation
-
-		[Server]
-		public void MoveBelt()
-		{
-			DetectItems();
-			MoveEntities();
-		}
-
-		private void DetectItems()
-		{
-			if (CurrentStatus == ConveyorStatus.Off) return;
-
-			GetPositionOffset();
-			if (!Matrix.IsPassableAt(registerTile.LocalPositionServer,
-				Vector3Int.RoundToInt(registerTile.LocalPositionServer + position), true)) return;
-
-			foreach (var player in Matrix.Get<PlayerSync>(registerTile.LocalPositionServer, ObjectType.Player, true))
+			if (conveyorBelt != null)
 			{
-				playerCache.Enqueue(player);
-			}
-
-			foreach (var item in Matrix.Get<CustomNetTransform>(registerTile.LocalPositionServer, true))
-			{
-				if (item.gameObject == gameObject || item.PushPull == null || !item.PushPull.IsPushable) continue;
-
-				cntCache.Enqueue(item);
-			}
-		}
-
-		private void MoveEntities()
-		{
-			while (playerCache.Count > 0)
-			{
-				TransportPlayer(playerCache.Dequeue());
-			}
-
-			while (cntCache.Count > 0)
-			{
-				Transport(cntCache.Dequeue());
-			}
-		}
-
-		[Server]
-		private void TransportPlayer(PlayerSync player)
-		{
-			//push player to the next tile
-			player?.Push(position.To2Int());
-		}
-
-		[Server]
-		private void Transport(CustomNetTransform item)
-		{
-			item?.Push(position.To2Int());
-		}
-
-		#endregion Belt Operation
-
-		[Server]
-		public void SetBeltFromBuildMenu(ConveyorDirection direction)
-		{
-			CurrentDirection = direction;
-			//Discover any neighbours:
-			for (int i = 0; i < searchDirs.Length; i++)
-			{
-				var conveyorBelt =
-					registerTile.Matrix.GetFirst<ConveyorBelt>(registerTile.LocalPosition + searchDirs[i].To3Int(), true);
-
-				if (conveyorBelt != null)
+				if (conveyorBelt.AssignedSwitch != null)
 				{
-					if (conveyorBelt.AssignedSwitch != null)
-					{
-						conveyorBelt.AssignedSwitch.AddConveyorBelt(new List<ConveyorBelt> { this });
-						conveyorBelt.SetState(conveyorBelt.CurrentStatus);
-						break;
-					}
+					conveyorBelt.AssignedSwitch.AddConveyorBelt(new List<ConveyorBelt>{this});
+					conveyorBelt.SyncStatus( conveyorBelt.CurrentStatus);
+					break;
 				}
 			}
-			RefreshSprites();
 		}
+	}
 
-		public void SetSwitchRef(ConveyorBeltSwitch switchRef)
-		{
-			AssignedSwitch = switchRef;
-		}
+	public void MoveBelt()
+	{
+		Profiler.BeginSample("MoveBelt");
+		if (isServer) DetectItems();
+		Profiler.EndSample();
+	}
+
+	public void SetSwitchRef(ConveyorBeltSwitch switchRef)
+	{
+		AssignedSwitch = switchRef;
+	}
 
 		/// <summary>
 		/// Updates the state of this conveyor based on the state of its assigned switch.
@@ -152,29 +121,28 @@ namespace Construction.Conveyors
 			switch (AssignedSwitch.CurrentState)
 			{
 				case ConveyorBeltSwitch.SwitchState.Off:
-					SetState(ConveyorStatus.Off);
+					SyncStatus(ConveyorStatus.Off);
 					break;
 				case ConveyorBeltSwitch.SwitchState.Forward:
-					SetState(ConveyorStatus.Forward);
+					SyncStatus(ConveyorStatus.Forward);
 					break;
 				case ConveyorBeltSwitch.SwitchState.Backward:
-					SetState(ConveyorStatus.Backward);
+					SyncStatus(ConveyorStatus.Backward);
 					break;
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
 		}
 
-		private void SetState(ConveyorStatus newStatus)
-		{
-			CurrentStatus = newStatus;
-			GetPositionOffset();
-			RefreshSprites();
-		}
+	private void SyncStatus( ConveyorStatus newStatus)
+	{
+		CurrentStatus = newStatus;
+		GetPositionOffset();
+		RefreshSprites();
+	}
 
 		private void RefreshSprites()
 		{
-			if (this == null) return;
 			spriteHandler.ChangeSprite((int)CurrentStatus);
 			var variant = (int)CurrentDirection;
 			switch (variant)
@@ -196,21 +164,54 @@ namespace Construction.Conveyors
 			spriteHandler.ChangeSpriteVariant(variant);
 		}
 
+
 		private void GetPositionOffset()
 		{
 			switch (CurrentStatus)
 			{
 				case ConveyorStatus.Forward:
-					position = ConveyorDirections.directionsForward[CurrentDirection];
+					transportDirection = ConveyorDirections.directionsForward[CurrentDirection];
 					break;
 				case ConveyorStatus.Backward:
-					position = ConveyorDirections.directionsBackward[CurrentDirection];
+					transportDirection = ConveyorDirections.directionsBackward[CurrentDirection];
 					break;
 				default:
-					position = Vector3.up;
+					transportDirection = Vector3Int.up;
 					break;
 			}
 		}
+
+	private void DetectItems()
+	{
+		if (CurrentStatus == ConveyorStatus.Off) return;
+
+		Profiler.BeginSample("BeltPassableCheck");
+		bool pushBlocked = !Matrix.IsPassableAt(registerTile.LocalPositionServer,
+			Vector3Int.RoundToInt(registerTile.LocalPositionServer + transportDirection), true);
+		Profiler.EndSample();
+		if (pushBlocked)
+		{
+			return;
+		}
+		Profiler.BeginSample("BeltTransport");
+		foreach (var item in Matrix.Get(registerTile.LocalPositionServer, true))
+		{
+			if (item == null || item.gameObject == this.gameObject
+			|| !item.CustomTransform || !item.CustomTransform.IsPushable)
+			{
+				continue;
+			}
+
+			Transport(item.CustomTransform);
+		}
+		Profiler.EndSample();
+	}
+
+	[Server]
+	public virtual void Transport(PushPull pushPull)
+	{
+		pushPull.QueuePush(transportDirection.To2Int(),3f, dontInsist: true);
+	}
 
 		public enum ConveyorStatus
 		{
@@ -287,9 +288,11 @@ namespace Construction.Conveyors
 				count = 0;
 			}
 
-			CurrentDirection = (ConveyorDirection)count;
+			// CurrentDirection = (ConveyorDirection)count;
+			//
+			// spriteHandler.ChangeSpriteVariant(count);
 
-			spriteHandler.ChangeSpriteVariant(count);
+			SyncDirection((ConveyorDirection)count, (ConveyorDirection)count);
 		}
 
 		#endregion Interaction
