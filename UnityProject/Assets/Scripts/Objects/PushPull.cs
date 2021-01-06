@@ -148,6 +148,8 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 	/// </summary>
 	public bool IsNotPushable => isNotPushable;
 
+	private (MoveType moveType, bool finished) lastMove = (MoveType.OwnInitiative,true);
+
 	/// <summary>
 	/// Toggle whether this is pushable. Valid server side only.
 	/// </summary>
@@ -213,6 +215,7 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 				pushable?.OnUpdateRecieved().AddListener(OnUpdateReceived);
 				pushable?.OnTileReached().AddListener(OnServerTileReached);
 				pushable?.OnClientTileReached().AddListener(OnClientTileReached);
+				pushable?.OnStartMove().AddListener(OnStartMove);
 				pushable?.OnPullInterrupt().AddListener(() =>
 				{
 					StopFollowing();
@@ -223,8 +226,6 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 			return pushable;
 		}
 	}
-
-
 
 	private void SyncIsNotPushable(bool wasNotPushable, bool isNowNotPushable)
 	{
@@ -477,9 +478,7 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 		floorDecal = GetComponent<FloorDecal>();
 		var pushable = Pushable; //don't remove this, it initializes Pushable listeners ^
 
-		Pushable.OnTileReached().AddListener(v => CheckQueue());
-
-		followAction = (oldPos, newPos) =>
+		followAction = (oldPos, newPos, moveType) =>
 		{
 			Vector3Int currentPos = Pushable.ServerPosition;
 			if (oldPos == newPos || oldPos == TransformState.HiddenPos || newPos == currentPos)
@@ -566,7 +565,7 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 
 	#region Pull
 
-	private UnityAction<Vector3Int, Vector3Int> followAction;
+	private UnityAction<Vector3Int, Vector3Int, MoveType> followAction;
 	private UnityAction<Vector3Int, Vector3Int> predictiveFollowAction;
 
 	public bool IsBeingPulled => PulledBy != null;
@@ -732,7 +731,7 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 	[Server]
 	private bool TryFollow(Vector3Int from, Vector2Int dir, float speed = Single.NaN)
 	{
-		if (!IsBeingPulled || isNotPushable || isBeingPushed || Pushable == null)
+		if (!IsBeingPulled || isNotPushable || IsBeingPushed || Pushable == null)
 		{
 			return false;
 		}
@@ -800,6 +799,17 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 	private PushState pushPrediction = PushState.None;
 	private ApprovalState pushApproval = ApprovalState.None;
 	private bool CanPredictPush => pushPrediction == PushState.None && Pushable.CanPredictPush;
+
+	public bool IsBeingPushed
+	{
+		get => isBeingPushed;
+		set
+		{
+			isBeingPushed = value;
+			Logger.LogTraceFormat("{0}: isBeingPushed = {1}", Category.PushPull, this.gameObject.name, isBeingPushed);
+		}
+	}
+
 	private Vector3Int predictivePushTarget = TransformState.HiddenPos;
 	private Vector3Int lastReliablePos = TransformState.HiddenPos;
 
@@ -815,9 +825,9 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 	public void QueuePush( Vector2Int dir, float speed = Single.NaN, bool dontInsist = false)
 	{
 		//		Logger.LogTraceFormat( "{0}: queued push {1} {2}", Category.PushPull, gameObject.name, dir, speed );
-		if (dontInsist && pushRequestQueue.Count > 0)
+		if (dontInsist && (pushRequestQueue.Count > 0 || IsBeingPushed))
 		{
-			CheckQueue();
+			// CheckQueue(); // this makes premature pushes
 			return;
 		}
 		pushRequestQueue.Enqueue( (dir, speed) );
@@ -826,7 +836,7 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 
 	private void CheckQueue()
 	{
-		if (pushRequestQueue.Count > 0 && !isBeingPushed)
+		if (pushRequestQueue.Count > 0 && !IsBeingPushed)
 		{
 			if ( !TryPush(pushRequestQueue.Dequeue()) )
 			{
@@ -850,6 +860,8 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 			return false;
 		}
 
+		IsBeingPushed = true;
+
 		bool success = Pushable.Push(dir, speed);
 		Vector3Int target = from + dir.To3Int();
 		if (success)
@@ -864,10 +876,13 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 			{
 				ReleaseControl();
 			}
-			isBeingPushed = true;
 			pushTarget = target;
 			Logger.LogTraceFormat("{2}: Started push {0}->{1}", Category.PushPull, from, target, gameObject.name);
 			this.RestartCoroutine(NoMoveSafeguard(from), ref revertIsBeingPushedHandle);
+		}
+		else
+		{
+			IsBeingPushed = false;
 		}
 
 		return success;
@@ -876,10 +891,10 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 	private IEnumerator NoMoveSafeguard(Vector3Int @from)
 	{
 		yield return WaitFor.Seconds(1);
-		if (isBeingPushed && Pushable.ServerPosition == from)
+		if (IsBeingPushed && Pushable.ServerPosition == from)
 		{
 			Logger.LogWarningFormat("{0} didn't move despite being pushed! Removing isBeingPushed flag", Category.PushPull, gameObject.name);
-			isBeingPushed = false;
+			IsBeingPushed = false;
 		}
 	}
 
@@ -908,7 +923,7 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 	/// cause the object to move.</returns>
 	private bool CanPush(Vector3Int pusherPos, Vector2Int dir, float speed = Single.NaN, bool serverSide = true)
 	{
-		if (isNotPushable || isBeingPushed || Pushable == null || !isAllowedDir(dir))
+		if (isNotPushable || IsBeingPushed || Pushable == null || !isAllowedDir(dir))
 		{
 			return false;
 		}
@@ -993,15 +1008,29 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 	#endregion
 
 	#region Events
+	private void OnStartMove(Vector3Int from, Vector3Int to, MoveType curMoveType)
+	{
+		Logger.LogTraceFormat("{0}: OnStartMove {1}->{2} ({3}); lastMove={4}",
+			Category.Movement, this.gameObject.name, from, to, curMoveType, lastMove);
+		if (!lastMove.finished && //todo: formula below might need tweaking
+		    lastMove.moveType == MoveType.OwnInitiative && curMoveType != MoveType.OwnInitiative
+		)
+		{ //last move was interrupted before tile was reached, resetting IsBeingPushed flag
+			IsBeingPushed = false;
+		}
+		lastMove = (curMoveType, false);
+	}
 
 	private void OnServerTileReached(Vector3Int newPos)
 	{
-		if (!isBeingPushed && pushRequestQueue.Count == 0)
+		lastMove = (lastMove.moveType, true);
+		Logger.LogTraceFormat("{0}: OnTileReached {1}", Category.PushPull, this.gameObject.name, newPos);
+		if (!IsBeingPushed && pushRequestQueue.Count == 0)
 		{
 			return;
 		}
 		//		Logger.LogTraceFormat( "{0}: {1} is reached ON SERVER", Category.PushPull, gameObject.name, pos );
-		isBeingPushed = false;
+		IsBeingPushed = false;
 		this.TryStopCoroutine(ref revertIsBeingPushedHandle);
 
 		if (pushTarget != TransformState.HiddenPos &&
@@ -1121,7 +1150,9 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 #if UNITY_EDITOR
 	private static Color color1 = Color.red;
 	private static Color color2 = Color.cyan;
-	private static Vector3 offset = new Vector2(0.03f, 0.05f);
+	private static Color color3 = DebugTools.HexToColor("ffff99"); //canary yellow, push queue color
+	private static Vector3 offset1 = new Vector2(0.03f, 0.05f);
+	private static Vector3 offsetTopRight = new Vector2(0.5f, 0.5f);
 
 	private void OnDrawGizmos()
 	{
@@ -1133,8 +1164,26 @@ public class PushPull : NetworkBehaviour, IRightClickable/*, IServerSpawn*/
 		if (IsBeingPulledClient)
 		{
 			Gizmos.color = color2;
-			Vector3 offPosition = transform.position + offset;
-			DebugGizmoUtils.DrawArrow(offPosition, (PulledByClient.transform.position + offset) - offPosition, 0.1f);
+			Vector3 offPosition = transform.position + offset1;
+			DebugGizmoUtils.DrawArrow(offPosition, (PulledByClient.transform.position + offset1) - offPosition, 0.1f);
+		}
+
+		if (IsBeingPushed)
+		{
+			DebugGizmoUtils.DrawText("P",transform.position+offsetTopRight);
+		}
+
+		//visualising push request queue
+		if (pushRequestQueue.Count > 0)
+		{
+			Gizmos.color = color3;
+			var array = pushRequestQueue.ToArray();
+			for (var i = 0; i < array.Length; i++)
+			{
+				Vector2 pushDir = array[i].Item1;
+				DebugGizmoUtils.DrawArrow((Vector2)transform.position+pushDir*(i+1),
+					pushDir, 0.1f);
+			}
 		}
 	}
 #endif

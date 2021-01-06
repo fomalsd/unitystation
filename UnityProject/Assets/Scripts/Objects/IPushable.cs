@@ -24,7 +24,7 @@ public interface IPushable
 	//I think this is valid server side only
 	bool VisibleState { get; set; }
 	Vector3IntEvent OnUpdateRecieved();
-	DualVector3IntEvent OnStartMove();
+	MoveEvent OnStartMove();
 	DualVector3IntEvent OnClientStartMove();
 	Vector3IntEvent OnTileReached();
 	Vector3IntEvent OnClientTileReached();
@@ -73,6 +73,9 @@ public interface IPushable
 public class Vector3Event : UnityEvent<Vector3> { }
 public class Vector3IntEvent : UnityEvent<Vector3Int> { }
 public class DualVector3IntEvent : UnityEvent<Vector3Int, Vector3Int> { }
+public class MoveEvent : UnityEvent<Vector3Int, Vector3Int, MoveType> { }
+
+public enum MoveType { OwnInitiative, ExternalPush, Inertia }
 
 /// <summary>
 /// Collision event that's invoked when a tile snapped object (player/machine) flies into something at high enough speed

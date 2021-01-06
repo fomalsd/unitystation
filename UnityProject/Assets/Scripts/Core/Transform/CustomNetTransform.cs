@@ -24,8 +24,8 @@ public partial class CustomNetTransform : ManagedNetworkBehaviour, IPushable //s
 		return onUpdateReceived;
 	}
 	/// Is also invoked in perpetual space flights
-	private DualVector3IntEvent onStartMove = new DualVector3IntEvent();
-	public DualVector3IntEvent OnStartMove() => onStartMove;
+	private MoveEvent onStartMove = new MoveEvent();
+	public MoveEvent OnStartMove() => onStartMove;
 	private DualVector3IntEvent onClientStartMove = new DualVector3IntEvent();
 	public DualVector3IntEvent OnClientStartMove() => onClientStartMove;
 	private Vector3IntEvent onTileReached = new Vector3IntEvent();

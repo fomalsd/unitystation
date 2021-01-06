@@ -487,7 +487,8 @@ public partial class PlayerSync
 			{
 				//NOTE: This is currently generated when client is slipping indoors because there's no way for client
 				//to know if a tile is slippery, thus they can never predict it correctly
-				Logger.LogWarning($"{nameof(spacewalkReset)}={spacewalkReset}, {nameof(wrongFloatDir)}={wrongFloatDir}", Category.Movement);
+				Logger.LogTraceFormat("{0}={1}, {2}={3}", Category.Movement,
+					nameof(spacewalkReset), spacewalkReset, nameof(wrongFloatDir), wrongFloatDir);
 				ClearQueueClient();
 				RollbackPrediction();
 

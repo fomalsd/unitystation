@@ -14,7 +14,7 @@ public static class DebugGizmoUtils
 
 		GUIContent textContent = new GUIContent(text);
 
-		GUIStyle style = new GUIStyle(guiSkin.GetStyle("Label")) {normal = {textColor = Gizmos.color}};
+		GUIStyle style = new GUIStyle(guiSkin.GetStyle("Label")) {normal = {textColor = Gizmos.color}, fontSize = 10};
 		if (fontSize > 0)
 		{
 			style.fontSize = fontSize;

@@ -10,8 +10,8 @@ using Objects;
 public partial class PlayerSync
 {
 	//Server-only fields, don't concern clients in any way
-	private DualVector3IntEvent onStartMove = new DualVector3IntEvent();
-	public DualVector3IntEvent OnStartMove() => onStartMove;
+	private MoveEvent onStartMove = new MoveEvent();
+	public MoveEvent OnStartMove() => onStartMove;
 	private Vector3IntEvent onTileReached = new Vector3IntEvent();
 	public Vector3IntEvent OnTileReached() => onTileReached;
 	private Vector3IntEvent onUpdateReceived = new Vector3IntEvent();
@@ -286,7 +286,7 @@ public partial class PlayerSync
 			registerPlayer.ServerSlip(true);
 		}
 
-		Logger.LogTraceFormat("{1}: Server push to {0}", Category.PushPull, pushGoal, gameObject.name);
+		// Logger.LogTraceFormat("{1}: Server push to {0}", Category.PushPull, pushGoal, gameObject.name);
 		ClearQueueServer();
 		MatrixInfo newMatrix = MatrixManager.AtPoint(pushGoal, true);
 		//Note the client queue reset
@@ -304,7 +304,7 @@ public partial class PlayerSync
 		lastDirectionServer = direction;
 		ServerState = newState;
 		SyncMatrix();
-		OnStartMove().Invoke(origin, pushGoal);
+		OnStartMove().Invoke(origin, pushGoal, MoveType.ExternalPush);
 		NotifyPlayers();
 
 		return true;
@@ -476,7 +476,7 @@ public partial class PlayerSync
 		if (lastDirectionServer != Vector2.zero)
 		{
 			CheckMovementServer();
-			OnStartMove().Invoke(oldPos.RoundToInt(), newPos.RoundToInt());
+			OnStartMove().Invoke(oldPos.RoundToInt(), newPos.RoundToInt(), MoveType.OwnInitiative);
 			SyncMatrix();
 		}
 
@@ -817,7 +817,7 @@ public partial class PlayerSync
 
 					var newPos = serverState.WorldPosition;
 
-					OnStartMove().Invoke(oldPos.RoundToInt(), newPos.RoundToInt());
+					OnStartMove().Invoke(oldPos.RoundToInt(), newPos.RoundToInt(), MoveType.Inertia);
 				}
 
 				//Explicitly informing about stunned players

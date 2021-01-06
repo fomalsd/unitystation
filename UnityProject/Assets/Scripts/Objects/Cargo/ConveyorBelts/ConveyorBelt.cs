@@ -118,6 +118,14 @@ public class ConveyorBelt : NetworkBehaviour, ICheckedInteractable<HandApply>, I
 		[Server]
 		public void UpdateState()
 		{
+			if (AssignedSwitch == null)
+			{
+				if (CurrentStatus != ConveyorStatus.Off)
+				{
+					SyncStatus(ConveyorStatus.Off);
+				}
+				return;
+			}
 			switch (AssignedSwitch.CurrentState)
 			{
 				case ConveyorBeltSwitch.SwitchState.Off:
